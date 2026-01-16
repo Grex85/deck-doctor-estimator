@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Camera,
   MapPin,
@@ -604,7 +604,22 @@ const LumberGradeChart = () => (
   </div>
 );
 
-// Address Autocomplete Component
+// Phone number formatting helper
+const formatPhoneNumber = (value: string): string => {
+  // Remove all non-digits
+  const digits = value.replace(/\D/g, '');
+
+  // Format as (XXX) XXX-XXXX
+  if (digits.length <= 3) {
+    return digits;
+  } else if (digits.length <= 6) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  } else {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  }
+};
+
+// Address Autocomplete Component - using Autocomplete Service for better React compatibility
 const AddressAutocomplete = ({
   value,
   onChange,
@@ -618,39 +633,140 @@ const AddressAutocomplete = ({
   className?: string;
   googlePlacesLoaded?: boolean;
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const [inputValue, setInputValue] = useState(value);
+  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesService = useRef<google.maps.places.PlacesService | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const selectionMade = useRef(false);
 
+  // Initialize services when Google loads
   useEffect(() => {
-    if (!inputRef.current || !googlePlacesLoaded || !window.google?.maps?.places) return;
+    if (googlePlacesLoaded && window.google?.maps?.places) {
+      autocompleteService.current = new window.google.maps.places.AutocompleteService();
+      // PlacesService needs a DOM element or map
+      const div = document.createElement('div');
+      placesService.current = new window.google.maps.places.PlacesService(div);
+    }
+  }, [googlePlacesLoaded]);
 
-    // Avoid re-initializing if already set up
-    if (autocompleteRef.current) return;
+  // Sync external value changes
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
 
-    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-      types: ['address'],
-      componentRestrictions: { country: 'us' }
-    });
-
-    autocompleteRef.current = autocomplete;
-
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place.formatted_address) {
-        onChange(place.formatted_address);
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
       }
-    });
-  }, [googlePlacesLoaded, onChange]);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchSuggestions = (input: string) => {
+    if (!autocompleteService.current || input.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    autocompleteService.current.getPlacePredictions(
+      {
+        input,
+        types: ['address'],
+        componentRestrictions: { country: 'us' }
+      },
+      (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+          setSuggestions(predictions);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+        }
+      }
+    );
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+
+    // Debounce API calls
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
+      fetchSuggestions(newValue);
+    }, 300);
+  };
+
+  const handleSelectSuggestion = (placeId: string, description: string) => {
+    selectionMade.current = true;
+    if (placesService.current) {
+      placesService.current.getDetails(
+        { placeId, fields: ['formatted_address'] },
+        (place, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.formatted_address) {
+            setInputValue(place.formatted_address);
+            onChange(place.formatted_address);
+          } else {
+            setInputValue(description);
+            onChange(description);
+          }
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      );
+    } else {
+      setInputValue(description);
+      onChange(description);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleBlur = () => {
+    // Delay to allow click on suggestion
+    setTimeout(() => {
+      if (selectionMade.current) {
+        selectionMade.current = false;
+        return;
+      }
+      onChange(inputValue);
+      setShowSuggestions(false);
+    }, 200);
+  };
 
   return (
-    <input
-      ref={inputRef}
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={className}
-    />
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={inputValue}
+        onChange={handleInputChange}
+        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        className={className}
+        autoComplete="off"
+      />
+      {showSuggestions && suggestions.length > 0 && (
+        <ul className="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+          {suggestions.map((suggestion) => (
+            <li
+              key={suggestion.place_id}
+              className="px-4 py-3 hover:bg-blue-50 cursor-pointer text-gray-900 border-b border-gray-100 last:border-b-0"
+              onMouseDown={() => handleSelectSuggestion(suggestion.place_id, suggestion.description)}
+            >
+              {suggestion.description}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 };
 
@@ -2255,17 +2371,25 @@ useEffect(() => {
 // Load Google Places API
 useEffect(() => {
   // Check if script already loaded
-  if (window.google && window.google.maps && window.google.maps.places) {
+  if (window.google && window.google.maps && window.google.maps.places?.AutocompleteService) {
     setGooglePlacesLoaded(true);
     return;
   }
 
   const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyD0ExhXCsNr_V_deefbKBV2uBDytkEtFQo&libraries=places`;
+  script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDQ_IOlk4nOKx8pXKhBtMuugtbVvyOEYfs&libraries=places`;
   script.async = true;
   script.defer = true;
   script.onload = () => {
-    setGooglePlacesLoaded(true);
+    // Wait for places library to fully initialize
+    const checkPlaces = () => {
+      if (window.google?.maps?.places?.AutocompleteService) {
+        setGooglePlacesLoaded(true);
+      } else {
+        setTimeout(checkPlaces, 100);
+      }
+    };
+    checkPlaces();
   };
   document.head.appendChild(script);
 
@@ -3831,22 +3955,13 @@ return (
                 type="tel"
                 value={jobData.customerPhone}
                 onChange={(e) => {
-                  const phone = e.target.value;
-                  setJobData((prev) => ({ ...prev, customerPhone: phone }));
+                  const formatted = formatPhoneNumber(e.target.value);
+                  setJobData((prev) => ({ ...prev, customerPhone: formatted }));
                 }}
-                className={`w-full p-4 text-lg border-3 rounded-lg focus:ring-4 focus:ring-blue-500 text-gray-900 font-medium bg-white ${
-                  jobData.customerPhone && !/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/.test(jobData.customerPhone)
-                    ? 'border-yellow-400 bg-yellow-50'
-                    : 'border-gray-400 focus:border-blue-500'
-                }`}
+                className="w-full p-4 text-lg border-3 border-gray-400 rounded-lg focus:ring-4 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white"
                 placeholder="(555) 123-4567"
+                maxLength={14}
               />
-              {jobData.customerPhone && !/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/.test(jobData.customerPhone) && (
-                <p className="text-yellow-700 text-sm mt-2 font-medium flex items-center">
-                  <AlertTriangle className="w-4 h-4 mr-1" />
-                  Please use format: (555) 123-4567
-                </p>
-              )}
             </div>
             <div>
               <label className="block text-lg font-bold text-gray-900 mb-3">
