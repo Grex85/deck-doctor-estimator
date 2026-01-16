@@ -3467,11 +3467,6 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
     }
   };
 
-  const materialCostKey = `${fieldKey}_material_cost`;
-  const laborHoursKey = `${fieldKey}_labor_hours`;
-  const materialCostValue = jobData.jobSpecificAnswers[materialCostKey] || "";
-  const laborHoursValue = jobData.jobSpecificAnswers[laborHoursKey] || "";
-
   return (
     <div>
       {renderMainInput()}
@@ -3480,44 +3475,6 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
           <AlertTriangle className="w-4 h-4 mr-1" />
           {error.message}
         </p>
-      )}
-      {/* Material Cost and Labor Hours - Only show for non-special question types */}
-      {question.type !== "calculation-display" && question.type !== "material-list" && (
-        <div className="mt-3 grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Material Cost
-            </label>
-            <div className="flex">
-              <span className="inline-flex items-center px-3 bg-gray-200 border-2 border-r-0 border-gray-300 rounded-l-md text-gray-700 font-medium text-sm">
-                $
-              </span>
-              <input
-                type="number"
-                value={materialCostValue}
-                onChange={(e) => handleJobAnswer(jobType, `${question.id}_material_cost`, e.target.value)}
-                className="flex-1 p-2 border-2 border-gray-300 rounded-r-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm bg-white"
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Labor Crew Hours
-            </label>
-            <input
-              type="number"
-              value={laborHoursValue}
-              onChange={(e) => handleJobAnswer(jobType, `${question.id}_labor_hours`, e.target.value)}
-              className="w-full p-2 border-2 border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm bg-white"
-              placeholder="0"
-              step="0.5"
-              min="0"
-            />
-          </div>
-        </div>
       )}
       {question.type !== "calculation-display" && question.type !== "material-list" && (
         <div className="mt-2">
