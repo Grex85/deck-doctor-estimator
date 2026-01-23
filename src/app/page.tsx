@@ -130,6 +130,9 @@ interface JobQuestion {
   section?: "current" | "recommended";
   placeholder?: string;
   label?: string;
+  perStructure?: boolean;
+  min?: number;
+  max?: number;
 }
 
 interface SpanChartData {
@@ -842,7 +845,7 @@ export default function ProfessionalEstimatorPage() {
   const jobTypeCategories = {
     Decks: {
       subcategories: ["New Build", "Repair", "Refinishing", "Replace Existing / Addition"],
-      components: ["Deck Railing", "Deck Stairs", "Decking", "Deck Frame", "Electrical/Lighting", "Built-ins"],
+      components: ["Hand Railing", "Deck Stairs", "Decking", "Deck Frame", "Electrical/Lighting", "Built-ins"],
     },
     Pergolas: {
       subcategories: ["New Build", "Repair", "Refinishing", "Replace Existing / Addition"],
@@ -876,7 +879,7 @@ export default function ProfessionalEstimatorPage() {
         { id: "current_fasteners_sqft", question: "Square footage of fasteners needing maintenance", type: "number", unit: "sq ft", category: "Current Assessment", section: "current", dependency: "current_fasteners_maintenance", dependencyValue: true },
         { id: "current_stairs_condition", question: "Stairs condition", type: "select-with-other", options: ["Excellent", "Good", "Fair", "Poor", "Failed", "No stairs"], category: "Current Assessment", section: "current", allowOther: true },
         { id: "current_stair_railing_condition", question: "Stair railing condition", type: "select-with-other", options: ["Excellent", "Good", "Fair", "Poor", "Failed", "No stair railings"], category: "Current Assessment", section: "current", allowOther: true },
-        { id: "current_railing_condition", question: "Deck railing condition", type: "select-with-other", options: ["Excellent", "Good", "Fair", "Poor", "Failed", "No railings"], category: "Current Assessment", section: "current", allowOther: true },
+        { id: "current_railing_condition", question: "Hand railing condition", type: "select-with-other", options: ["Excellent", "Good", "Fair", "Poor", "Failed", "No railings"], category: "Current Assessment", section: "current", allowOther: true },
         { id: "current_stain_paint_color", question: "Current stain/paint color", type: "text", category: "Current Finish", section: "current" },
         { id: "multiple_colors", question: "More than one stain/paint color?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Current Finish", section: "current" },
         { id: "current_stain_paint_color_2", question: "Second stain/paint color", type: "text", category: "Current Finish", section: "current", dependency: "multiple_colors", dependencyValue: true },
@@ -911,7 +914,7 @@ export default function ProfessionalEstimatorPage() {
         { id: "current_roof_issues", question: "Roof issues observed", type: "checkbox-multiple", options: ["Missing shingles", "Granule loss", "Cracked/damaged shingles", "Gutter damage", "Flashing issues", "Ventilation problems"], category: "Current Assessment", section: "current", allowOther: true },
       ],
       Painting: [
-        { id: "current_paint_type", question: "Current paint/finish type", type: "select-with-other", options: ["Latex paint", "Oil-based paint", "Solid stain", "Semi-transparent stain", "Bare wood", "Unknown"], required: true, category: "Current Condition", section: "current", allowOther: true },
+        { id: "current_paint_type", question: "Current paint/finish type", type: "select-with-other", options: ["Latex paint", "Oil-based paint", "Wood Iron Premium", "Wood Iron Semi-Solid", "Solid stain", "Semi-transparent stain", "Bare wood", "Unknown"], required: true, category: "Current Condition", section: "current", allowOther: true },
         { id: "current_paint_condition", question: "Paint condition", type: "material-condition", category: "Current Assessment", section: "current", required: true },
         { id: "current_surface_prep_needed", question: "Surface prep needed", type: "checkbox-multiple", options: ["Power washing", "Scraping", "Sanding", "Caulking", "Priming", "Repair work"], category: "Current Assessment", section: "current", allowOther: true },
         { id: "last_painted", question: "When was it last painted?", type: "select-with-other", options: ["Within 2 years", "2-5 years ago", "5-10 years ago", "Over 10 years", "Never/Unknown"], category: "Paint History", section: "current", allowOther: true },
@@ -941,8 +944,8 @@ export default function ProfessionalEstimatorPage() {
         { id: "recommended_stairs_notes", question: "Stairs notes and details", type: "textarea", category: "Refinishing - Stairs", section: "recommended", dependency: "recommended_stairs", dependencyValue: true },
 
         // Verticals Refinishing Recommendations
-        { id: "recommended_verticals", question: "Verticals refinishing recommendations", type: "checkbox-multiple", options: ["Color change", "Power sanding", "Light sanding", "Pressure washing", "Fastener securing"], category: "Refinishing - Verticals", section: "recommended", allowOther: true },
-        { id: "recommended_verticals_notes", question: "Verticals notes and details", type: "textarea", category: "Refinishing - Verticals", section: "recommended", dependency: "recommended_verticals", dependencyValue: true },
+        { id: "recommended_verticals", question: "Verticals refinishing recommendations", type: "checkbox-multiple", options: ["Color change", "Power sanding", "Light sanding", "Pressure washing", "Fastener securing"], category: "Refinishing - Miscellaneous", section: "recommended", allowOther: true },
+        { id: "recommended_verticals_notes", question: "Verticals notes and details", type: "textarea", category: "Refinishing - Miscellaneous", section: "recommended", dependency: "recommended_verticals", dependencyValue: true },
 
         // Extras Refinishing Recommendations
         { id: "recommended_extras", question: "Extras refinishing recommendations", type: "checkbox-multiple", options: ["Color change", "Power sanding", "Light sanding", "Pressure washing", "Fastener securing"], category: "Refinishing - Extras", section: "recommended", allowOther: true },
@@ -981,6 +984,84 @@ export default function ProfessionalEstimatorPage() {
     return repairsQuestions[category] || [];
   };
 
+  // Helper function to get Replace Existing / Addition specific questions
+  const getReplaceAdditionQuestions = (category: string): JobQuestion[] => {
+    const replaceAdditionQuestions: Record<string, JobQuestion[]> = {
+      Decks: [
+        // ===== CURRENT STRUCTURE ASSESSMENT =====
+        { id: "ra_current_structure_type", question: "What type of structure is being replaced/added to?", type: "select-with-other", options: ["Full deck", "Deck section", "Stairs only", "Railing only", "Frame only", "Decking only"], category: "Current Structure - Type", section: "current", required: true, allowOther: true, perStructure: true },
+
+        // Current Measurements
+        { id: "ra_current_deck_dimensions", question: "Current deck dimensions", type: "multiple-dimensions", category: "Current Structure - Measurements", section: "current", perStructure: true },
+        { id: "ra_current_deck_height", question: "Current deck height from ground", type: "text", category: "Current Structure - Measurements", section: "current", perStructure: true },
+        { id: "ra_current_railing_linear_ft", question: "Current railing linear feet", type: "number", unit: "linear ft", category: "Current Structure - Measurements", section: "current", perStructure: true },
+        { id: "ra_current_stair_count", question: "Current number of stairs", type: "number", category: "Current Structure - Measurements", section: "current", perStructure: true },
+
+        // Current Materials & Condition
+        { id: "ra_current_decking_material", question: "Current decking material", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Redwood", "Composite", "PVC", "Unknown"], category: "Current Structure - Materials", section: "current", allowOther: true, perStructure: true },
+        { id: "ra_current_frame_material", question: "Current frame material", type: "select-with-other", options: ["Pressure Treated Pine", "Douglas Fir", "LVL", "Steel", "Unknown"], category: "Current Structure - Materials", section: "current", allowOther: true, perStructure: true },
+        { id: "ra_current_railing_material", question: "Current railing material", type: "select-with-other", options: ["Wood", "Composite", "Aluminum", "Cable", "Iron", "None", "Unknown"], category: "Current Structure - Materials", section: "current", allowOther: true, perStructure: true },
+        { id: "ra_current_condition_notes", question: "Current condition notes and issues", type: "textarea", category: "Current Structure - Condition", section: "current", placeholder: "Describe current condition, damage, wear, structural issues...", perStructure: true },
+
+        // ===== RECOMMENDED REPLACEMENT/ADDITION =====
+        { id: "ra_work_type", question: "Type of work needed", type: "checkbox-multiple", options: ["Full replacement", "Partial replacement", "Addition/expansion", "Structural repair"], category: "Recommended Work - Type", section: "recommended", required: true, allowOther: true, perStructure: true },
+
+        // Recommended Dimensions
+        { id: "ra_recommended_dimensions", question: "Recommended/new dimensions", type: "select-with-other", options: ["Same as existing", "Custom dimensions (specify below)"], category: "Recommended Work - Dimensions", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_new_deck_dimensions", question: "New deck dimensions (if different)", type: "multiple-dimensions", category: "Recommended Work - Dimensions", section: "recommended", dependency: "ra_recommended_dimensions", dependencyValue: "Custom dimensions (specify below)", perStructure: true },
+        { id: "ra_addition_dimensions", question: "Addition dimensions (if expanding)", type: "multiple-dimensions", category: "Recommended Work - Dimensions", section: "recommended", perStructure: true },
+
+        // Recommended Materials
+        { id: "ra_recommended_decking", question: "Recommended decking material", type: "select-with-other", options: ["Same as existing", "Pressure Treated Pine", "Cedar", "Redwood", "Composite (Deckorators)", "Composite (Trex)", "PVC"], category: "Recommended Work - Materials", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_frame", question: "Recommended frame material", type: "select-with-other", options: ["Same as existing", "Pressure Treated Pine", "Douglas Fir", "LVL", "Steel"], category: "Recommended Work - Materials", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_railing", question: "Recommended railing material", type: "select-with-other", options: ["Same as existing", "Wood", "Composite", "Aluminum", "Cable", "Iron", "None needed"], category: "Recommended Work - Materials", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_railing_style", question: "Recommended railing style", type: "select-with-other", options: ["Same as existing", "Vertical balusters", "Horizontal balusters", "Cable railing", "Glass panels", "Privacy panels"], category: "Recommended Work - Materials", section: "recommended", allowOther: true, perStructure: true },
+
+        // Description of Work
+        { id: "ra_work_description", question: "Detailed description of recommended work", type: "textarea", category: "Recommended Work - Description", section: "recommended", placeholder: "Describe the recommended replacement or addition work in detail...", perStructure: true },
+        { id: "ra_special_considerations", question: "Special considerations or notes", type: "textarea", category: "Recommended Work - Notes", section: "recommended", placeholder: "Any special requirements, access issues, permits needed, etc.", perStructure: true },
+      ],
+      Pergolas: [
+        { id: "ra_current_pergola_dimensions", question: "Current pergola dimensions", type: "dimensions", category: "Current Structure - Measurements", section: "current", perStructure: true },
+        { id: "ra_current_pergola_material", question: "Current pergola material", type: "select-with-other", options: ["Wood", "Aluminum", "Vinyl", "Steel", "Unknown"], category: "Current Structure - Materials", section: "current", allowOther: true, perStructure: true },
+        { id: "ra_current_condition_notes", question: "Current condition notes", type: "textarea", category: "Current Structure - Condition", section: "current", perStructure: true },
+        { id: "ra_work_type", question: "Type of work needed", type: "checkbox-multiple", options: ["Full replacement", "Partial replacement", "Addition/expansion", "Structural repair"], category: "Recommended Work - Type", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_dimensions", question: "Recommended dimensions", type: "select-with-other", options: ["Same as existing", "Custom dimensions"], category: "Recommended Work - Dimensions", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_material", question: "Recommended material", type: "select-with-other", options: ["Same as existing", "Cedar", "Aluminum", "Vinyl", "Steel", "Composite"], category: "Recommended Work - Materials", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_work_description", question: "Detailed work description", type: "textarea", category: "Recommended Work - Description", section: "recommended", perStructure: true },
+      ],
+      Hardscaping: [
+        { id: "ra_current_area", question: "Current hardscape area", type: "squarefeet", category: "Current Structure - Measurements", section: "current", perStructure: true },
+        { id: "ra_current_material", question: "Current hardscape material", type: "select-with-other", options: ["Concrete pavers", "Brick pavers", "Natural stone", "Concrete", "Gravel", "Unknown"], category: "Current Structure - Materials", section: "current", allowOther: true, perStructure: true },
+        { id: "ra_current_condition_notes", question: "Current condition notes", type: "textarea", category: "Current Structure - Condition", section: "current", perStructure: true },
+        { id: "ra_work_type", question: "Type of work needed", type: "checkbox-multiple", options: ["Full replacement", "Partial replacement", "Addition/expansion", "Repair"], category: "Recommended Work - Type", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_area", question: "Recommended area", type: "select-with-other", options: ["Same as existing", "Custom area"], category: "Recommended Work - Dimensions", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_material", question: "Recommended material", type: "select-with-other", options: ["Same as existing", "Concrete pavers", "Brick pavers", "Natural stone", "Stamped concrete"], category: "Recommended Work - Materials", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_work_description", question: "Detailed work description", type: "textarea", category: "Recommended Work - Description", section: "recommended", perStructure: true },
+      ],
+      "Retaining Walls": [
+        { id: "ra_current_height", question: "Current wall height", type: "text", category: "Current Structure - Measurements", section: "current", perStructure: true },
+        { id: "ra_current_length", question: "Current wall length", type: "number", unit: "ft", category: "Current Structure - Measurements", section: "current", perStructure: true },
+        { id: "ra_current_material", question: "Current wall material", type: "select-with-other", options: ["Concrete block", "Natural stone", "Timber", "Poured concrete", "Unknown"], category: "Current Structure - Materials", section: "current", allowOther: true, perStructure: true },
+        { id: "ra_current_condition_notes", question: "Current condition notes", type: "textarea", category: "Current Structure - Condition", section: "current", perStructure: true },
+        { id: "ra_work_type", question: "Type of work needed", type: "checkbox-multiple", options: ["Full replacement", "Partial replacement", "Addition/extension", "Structural repair", "Reinforcement"], category: "Recommended Work - Type", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_dimensions", question: "Recommended dimensions", type: "select-with-other", options: ["Same as existing", "Custom dimensions"], category: "Recommended Work - Dimensions", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_material", question: "Recommended material", type: "select-with-other", options: ["Same as existing", "Concrete block", "Natural stone", "Segmental blocks", "Poured concrete"], category: "Recommended Work - Materials", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_work_description", question: "Detailed work description", type: "textarea", category: "Recommended Work - Description", section: "recommended", perStructure: true },
+      ],
+      Roofs: [
+        { id: "ra_current_area", question: "Current roof area", type: "squarefeet", category: "Current Structure - Measurements", section: "current", perStructure: true },
+        { id: "ra_current_material", question: "Current roofing material", type: "select-with-other", options: ["Asphalt shingles", "Metal", "Tile", "Slate", "TPO/EPDM", "Unknown"], category: "Current Structure - Materials", section: "current", allowOther: true, perStructure: true },
+        { id: "ra_current_condition_notes", question: "Current condition notes", type: "textarea", category: "Current Structure - Condition", section: "current", perStructure: true },
+        { id: "ra_work_type", question: "Type of work needed", type: "checkbox-multiple", options: ["Full replacement", "Partial replacement", "Addition", "Repair"], category: "Recommended Work - Type", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_area", question: "Recommended area", type: "select-with-other", options: ["Same as existing", "Custom area"], category: "Recommended Work - Dimensions", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_recommended_material", question: "Recommended material", type: "select-with-other", options: ["Same as existing", "Asphalt shingles", "Metal", "Tile", "TPO/EPDM"], category: "Recommended Work - Materials", section: "recommended", allowOther: true, perStructure: true },
+        { id: "ra_work_description", question: "Detailed work description", type: "textarea", category: "Recommended Work - Description", section: "recommended", perStructure: true },
+      ],
+    };
+    return replaceAdditionQuestions[category] || [];
+  };
+
   // Questions per type (ENHANCED WITH ALL NEW FEATURES)
   const getJobQuestions = (jobType: string): JobQuestion[] => {
     const category = jobType.split(" - ")[0];
@@ -990,46 +1071,47 @@ export default function ProfessionalEstimatorPage() {
     const questionsMap: Record<string, JobQuestion[]> = {
       Decks: [
         // ===== BASIC SETUP INFO =====
-        { id: "deck_sections", question: "Number of deck sections/levels", type: "number", required: true, category: "Basic Measurements" },
-        { id: "main_deck_dimensions", question: "Main deck area dimensions", type: "multiple-dimensions", required: true, category: "Basic Measurements" },
-        { id: "ground_level_deck", question: "Is this a ground level deck?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Basic Measurements" },
-        { id: "deck_has_stairs", question: "Does this deck have stairs?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Basic Measurements", dependency: "ground_level_deck", dependencyValue: false },
+        { id: "number_of_structures", question: "How many structures are in this project?", type: "number", required: true, category: "Basic Measurements", min: 1, max: 10 },
+        { id: "deck_sections", question: "Number of deck sections/levels", type: "number", required: true, category: "Basic Measurements", perStructure: true },
+        { id: "main_deck_dimensions", question: "Deck area dimensions", type: "multiple-dimensions", required: true, category: "Basic Measurements", perStructure: true },
+        { id: "ground_level_deck", question: "Is this a ground level deck?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Basic Measurements", perStructure: true },
+        { id: "deck_has_stairs", question: "Does this deck have stairs?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Basic Measurements", perStructure: true },
 
         // (Frame & columns and decking questions come from newBuildQuestions for New Build)
 
         // ===== RAILING QUESTIONS =====
-        { id: "does_deck_have_railings", question: "Does this deck have railings?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Railing Assessment" },
-        { id: "railing_material", question: "Railing material type", type: "select-with-other", options: ["Redwood", "Composite", "Aluminum", "Cable Railing", "Vertical Balluster", "Horizontal Balluster", "Privacy Panel or Wall", "Hog Wire", "Log", "Custom"], required: true, category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true },
-        { id: "railing_custom_description", question: "Custom railing description", type: "textarea", category: "Railings", dependency: "railing_material", dependencyValue: "Custom" },
-        { id: "railing_powder_coating", question: "Powder coating for metal railing?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Railings", dependency: "railing_material", dependencyValue: "Aluminum" },
-        { id: "railing_powder_coating_color", question: "Powder coating color", type: "text", category: "Railings", dependency: "railing_powder_coating", dependencyValue: true },
-        { id: "stairs_have_railings", question: "Do the stairs have railings?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Railing Assessment", dependency: "deck_has_stairs", dependencyValue: true },
-        { id: "stair_railing_sides", question: "Stair railing on one side or both sides?", type: "select", options: ["One side", "Both sides"], category: "Railing Assessment", dependency: "stairs_have_railings", dependencyValue: true },
+        { id: "does_deck_have_railings", question: "Does this deck have railings?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Railing Assessment", perStructure: true },
+        { id: "railing_material", question: "Railing material type", type: "select-with-other", options: ["Redwood", "Composite", "Aluminum", "Cable Railing", "Vertical Balluster", "Horizontal Balluster", "Privacy Panel or Wall", "Hog Wire", "Log", "Custom"], required: true, category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
+        { id: "railing_custom_description", question: "Custom railing description", type: "textarea", category: "Railings", dependency: "railing_material", dependencyValue: "Custom", perStructure: true },
+        { id: "railing_powder_coating", question: "Powder coating for metal railing?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Railings", dependency: "railing_material", dependencyValue: "Aluminum", perStructure: true },
+        { id: "railing_powder_coating_color", question: "Powder coating color", type: "text", category: "Railings", dependency: "railing_powder_coating", dependencyValue: true, perStructure: true },
+        { id: "stairs_have_railings", question: "Do the stairs have railings?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Railing Assessment", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "stair_railing_sides", question: "Stair railing on one side or both sides?", type: "checkbox-multiple", options: ["One side", "Both sides"], category: "Railing Assessment", dependency: "stairs_have_railings", dependencyValue: true, perStructure: true },
 
         // ===== RAILING MEASUREMENTS =====
-        { id: "total_level_railing_linear_ft", question: "Total level horizontal railing", type: "number", unit: "linear ft", category: "Railing Measurements", dependency: "does_deck_have_railings", dependencyValue: true },
-        { id: "total_stair_railing_linear_ft", question: "Total stair railing", type: "number", unit: "linear ft", category: "Railing Measurements", dependency: "stairs_have_railings", dependencyValue: true },
+        { id: "total_level_railing_linear_ft", question: "Total level horizontal railing", type: "number", unit: "linear ft", category: "Railing Measurements", dependency: "does_deck_have_railings", dependencyValue: true, perStructure: true },
+        { id: "total_stair_railing_linear_ft", question: "Total stair railing", type: "number", unit: "linear ft", category: "Railing Measurements", dependency: "stairs_have_railings", dependencyValue: true, perStructure: true },
 
         // ===== STAIRS =====
-        { id: "calculated_number_of_steps", question: "Calculated number of steps", type: "calculation-display", category: "Stairs", calculation: "steps-from-railing" },
-        { id: "stair_tread_material", question: "What material are the stair treads?", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Redwood", "Hardwood", "Composite", "Same as deck"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, allowOther: true },
-        { id: "stair_tread_boards", question: "Stair treads: one board or two?", type: "select", options: ["One board", "Two boards"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true },
-        { id: "stairs_enclosed_or_open", question: "Are stairs enclosed or open?", type: "select", options: ["Enclosed", "Open"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true },
-        { id: "stairs_have_risers", question: "Are there risers?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true },
-        { id: "stair_stringer_material", question: "What material are the stringers?", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Steel", "Composite"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, allowOther: true },
-        { id: "number_of_stringers", question: "How many stringers?", type: "number", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true },
-        { id: "stairs_have_landing", question: "Do stairs have a middle landing?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true },
-        { id: "stair_decking_matches", question: "Does decking on stairs match rest of deck?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true },
-        { id: "landing_type", question: "Type of landing at bottom of stairs", type: "select-with-other", options: ["Concrete pad", "Pavers", "Gravel", "Grass", "Wood platform", "No landing"], category: "Stairs", dependency: "stairs_have_landing", dependencyValue: true, allowOther: true },
-
-        // ===== VERTICALS =====
-        { id: "verticals_description", question: "Describe any verticals that need to be refinished", type: "textarea", category: "Verticals", placeholder: "e.g., skirting, fascia, posts, beams, etc." },
+        { id: "calculated_number_of_steps", question: "Calculated number of steps", type: "calculation-display", category: "Stairs", calculation: "steps-from-railing", perStructure: true },
+        { id: "stair_tread_material", question: "What material are the stair treads?", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Redwood", "Hardwood", "Composite", "Same as deck"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, allowOther: true, perStructure: true },
+        { id: "stair_tread_boards", question: "Stair treads: one board or two?", type: "select", options: ["One board", "Two boards"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "stairs_enclosed_or_open", question: "Are stairs enclosed or open?", type: "select", options: ["Enclosed", "Open"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "stairs_have_risers", question: "Are there risers?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "stair_stringer_material", question: "What material are the stringers?", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Steel", "Composite"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, allowOther: true, perStructure: true },
+        { id: "number_of_stringers", question: "How many stringers?", type: "number", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "stairs_have_landing", question: "Do stairs have a middle landing?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "landing_type", question: "Type of landing at bottom of stairs", type: "select-with-other", options: ["Concrete pad", "Pavers", "Gravel", "Grass", "Wood platform", "No landing"], category: "Stairs", dependency: "stairs_have_landing", dependencyValue: true, allowOther: true, perStructure: true },
 
         // ===== FASCIA =====
-        { id: "fascia_size", question: "Fascia size", type: "select-with-other", options: ["12 inch", "10 inch", "8 inch", "6 inch"], category: "Fascia", allowOther: true },
-        { id: "fascia_linear_feet", question: "Fascia linear feet", type: "number", unit: "linear ft", category: "Fascia" },
+        { id: "fascia_size", question: "Fascia size", type: "select-with-other", options: ["12 inch", "10 inch", "8 inch", "6 inch"], category: "Fascia", allowOther: true, perStructure: true },
+        { id: "fascia_color", question: "What color is the fascia?", type: "select-with-other", options: ["Match deck color", "White", "Black", "Brown", "Gray", "Natural wood", "Custom color"], category: "Fascia", allowOther: true, perStructure: true },
+        { id: "fascia_linear_feet", question: "Fascia linear feet", type: "number", unit: "linear ft", category: "Fascia", perStructure: true },
 
         // (Staircase questions come from newBuildQuestions for New Build)
+
+        // ===== MISCELLANEOUS =====
+        { id: "miscellaneous_areas", question: "Miscellaneous items that need attention", type: "add-sections", category: "Miscellaneous", placeholder: "e.g., skirting, fascia, posts, beams, verticals, etc.", perStructure: true },
 
         // ===== DOCUMENTATION =====
         { id: "photo_video_reminder", question: "Photo/Video Documentation Reminder", type: "calculation-display", category: "Documentation - Pictures and Videos" },
@@ -1037,6 +1119,7 @@ export default function ProfessionalEstimatorPage() {
       ],
       
       Pergolas: [
+        { id: "number_of_structures", question: "How many structures are in this project?", type: "number", required: true, category: "Basic Measurements", min: 1, max: 10 },
         { id: "pergola_dimensions", question: "Pergola dimensions", type: "dimensions", required: true, category: "Basic Measurements" },
         { id: "pergola_height", question: "Pergola height", type: "select-with-other", options: ["8 feet", "9 feet", "10 feet", "11 feet", "12 feet", "Custom height"], required: true, category: "Basic Measurements", allowOther: true },
         { id: "pergola_material", question: "Preferred pergola material", type: "select-with-other", options: ["Cedar", "Pressure Treated Pine", "Composite", "Aluminum", "Steel"], required: true, category: "Materials", allowOther: true },
@@ -1047,6 +1130,7 @@ export default function ProfessionalEstimatorPage() {
       ],
 
       Hardscaping: [
+        { id: "number_of_structures", question: "How many structures are in this project?", type: "number", required: true, category: "Basic Measurements", min: 1, max: 10 },
         { id: "hardscape_area", question: "Total hardscaping area", type: "squarefeet", required: true, category: "Basic Measurements" },
         { id: "hardscape_type", question: "Type of hardscaping", type: "select-with-other", options: ["Patio", "Walkway", "Driveway", "Pool deck", "Fire pit area", "Outdoor kitchen area"], required: true, category: "Project Type", allowOther: true },
         { id: "hardscape_material", question: "Preferred material", type: "select-with-other", options: ["Concrete pavers", "Natural stone", "Brick pavers", "Flagstone", "Stamped concrete", "Plain concrete"], required: true, category: "Materials", allowOther: true },
@@ -1057,6 +1141,7 @@ export default function ProfessionalEstimatorPage() {
       ],
 
       "Retaining Walls": [
+        { id: "number_of_structures", question: "How many structures are in this project?", type: "number", required: true, category: "Basic Measurements", min: 1, max: 10 },
         { id: "wall_height", question: "Maximum wall height", type: "select-with-other", options: ["1-2 feet", "2-3 feet", "3-4 feet", "4-5 feet", "5-6 feet", "Over 6 feet"], required: true, category: "Basic Measurements", allowOther: true },
         { id: "wall_length", question: "Total wall length", type: "number", unit: "ft", required: true, category: "Basic Measurements" },
         { id: "wall_configuration", question: "Is the retaining wall straight or does it have any bends or wings or changes in height?", type: "checkbox-multiple", options: ["Straight wall", "Has bends/curves", "Has wings or returns", "Has height changes", "Multiple sections"], category: "Wall Configuration", allowOther: true },
@@ -1067,6 +1152,7 @@ export default function ProfessionalEstimatorPage() {
       ],
 
       Roofs: [
+        { id: "number_of_structures", question: "How many structures are in this project?", type: "number", required: true, category: "Basic Measurements", min: 1, max: 10 },
         { id: "roof_area", question: "Total roof area", type: "squarefeet", required: true, category: "Basic Measurements" },
         { id: "roof_material", question: "Preferred roofing material", type: "select-with-other", options: ["Asphalt shingles (architectural)", "Metal roofing (steel)", "Metal roofing (aluminum)", "Tile (concrete)", "Tile (clay)", "Slate", "TPO/EPDM"], required: true, category: "Materials", allowOther: true },
         { id: "roof_pitch", question: "Roof pitch/slope", type: "select-with-other", options: ["Low slope (under 3/12)", "Standard slope (4/12 to 8/12)", "Steep slope (9/12 to 12/12)", "Very steep (over 12/12)"], category: "Roof Details", allowOther: true },
@@ -1078,6 +1164,7 @@ export default function ProfessionalEstimatorPage() {
       ],
 
       Painting: [
+        { id: "number_of_areas", question: "How many areas are there that need to be painted?", type: "number", required: true, category: "Basic Measurements", min: 1, max: 20 },
         { id: "paint_area", question: "Total area to paint", type: "squarefeet", required: true, category: "Basic Measurements" },
         { id: "paint_location", question: "Paint location", type: "select-with-other", options: ["Interior only", "Exterior only", "Both interior and exterior"], required: true, category: "Project Scope", allowOther: true },
         { id: "surface_types", question: "Surface types to paint", type: "checkbox-multiple", options: ["Walls", "Ceilings", "Trim/Doors", "Cabinets", "Exterior siding", "Exterior trim", "Deck/Fence"], category: "Surfaces", allowOther: true },
@@ -1100,12 +1187,13 @@ export default function ProfessionalEstimatorPage() {
           // ===== BASIC SETUP INFO =====
           {
             id: "foundation_type",
-            question: "Foundation/pier type needed",
+            question: "Foundation / Pier Type",
             type: "checkbox-multiple",
-            options: ["Concrete footings (42\" deep CO)", "Helical piers (engineered)", "Pier footings"],
-            required: true,
+            options: ["Concrete footings (42\" deep CO)", "Helical piers (engineered)", "Pier footings", "Other"],
+            required: false,
             category: "Foundation Planning",
             allowOther: true,
+            perStructure: true,
           },
 
           // ===== DECK FRAME & COLUMNS =====
@@ -1117,6 +1205,7 @@ export default function ProfessionalEstimatorPage() {
             required: true,
             category: "Framing Design",
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "joist_size",
@@ -1126,6 +1215,7 @@ export default function ProfessionalEstimatorPage() {
             required: true,
             category: "Framing Design",
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "joist_direction",
@@ -1134,6 +1224,7 @@ export default function ProfessionalEstimatorPage() {
             options: ["Parallel to house", "Perpendicular to house", "45-degree angle"],
             required: true,
             category: "Framing Design",
+            perStructure: true,
           },
           {
             id: "header_length",
@@ -1142,6 +1233,7 @@ export default function ProfessionalEstimatorPage() {
             unit: "ft",
             required: true,
             category: "Framing Design",
+            perStructure: true,
           },
           {
             id: "joist_spacing",
@@ -1150,6 +1242,7 @@ export default function ProfessionalEstimatorPage() {
             options: ['12" OC', '16" OC', '24" OC'],
             required: true,
             category: "Framing Design",
+            perStructure: true,
           },
           // BEAM CONFIGURATION SECTION
           {
@@ -1173,6 +1266,7 @@ export default function ProfessionalEstimatorPage() {
             required: true,
             category: "Beam Configuration",
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "beam_type",
@@ -1181,6 +1275,7 @@ export default function ProfessionalEstimatorPage() {
             options: ["Raised beam", "Dropped beam"],
             required: true,
             category: "Beam Configuration",
+            perStructure: true,
           },
           {
             id: "beam_linear_feet",
@@ -1189,12 +1284,14 @@ export default function ProfessionalEstimatorPage() {
             unit: "ft",
             required: true,
             category: "Beam Configuration",
+            perStructure: true,
           },
           {
             id: "additional_beam_needed",
             question: "Additional beam needed?",
             type: "checkbox",
             category: "Beam Configuration",
+            perStructure: true,
           },
           {
             id: "second_beam_linear_feet",
@@ -1204,6 +1301,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Beam Configuration",
             dependency: "additional_beam_needed",
             dependencyValue: true,
+            perStructure: true,
           },
           {
             id: "joist_connection_type",
@@ -1212,6 +1310,7 @@ export default function ProfessionalEstimatorPage() {
             options: ["Joist hangers on beam", "Joists sit on top", "Flush beam", "Double beam with joists between"],
             category: "Beam Configuration",
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "joist_hanger_type",
@@ -1221,12 +1320,14 @@ export default function ProfessionalEstimatorPage() {
             category: "Beam Configuration",
             dependency: "joist_connection_type",
             dependencyValue: "Joist hangers on beam",
+            perStructure: true,
           },
           {
             id: "blocking_needed",
             question: "Blocking needed between joists?",
             type: "checkbox",
             category: "Framing Details",
+            perStructure: true,
           },
           {
             id: "blocking_spacing",
@@ -1236,6 +1337,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Framing Details",
             dependency: "blocking_needed",
             dependencyValue: true,
+            perStructure: true,
           },
           {
             id: "blocking_material",
@@ -1246,6 +1348,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "blocking_needed",
             dependencyValue: true,
             allowOther: true,
+            perStructure: true,
           },
           // COLUMN SECTION WITH INDIVIDUAL LENGTHS
           {
@@ -1254,6 +1357,7 @@ export default function ProfessionalEstimatorPage() {
             type: "number",
             required: true,
             category: "Column Planning",
+            perStructure: true,
           },
           {
             id: "column_height",
@@ -1263,6 +1367,7 @@ export default function ProfessionalEstimatorPage() {
             required: true,
             category: "Column Planning",
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "column_size",
@@ -1272,6 +1377,7 @@ export default function ProfessionalEstimatorPage() {
             required: true,
             category: "Column Planning",
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "column_material",
@@ -1281,6 +1387,7 @@ export default function ProfessionalEstimatorPage() {
             required: true,
             category: "Column Planning",
             allowOther: true,
+            perStructure: true,
           },
           // SWAY BRACES
           {
@@ -1288,6 +1395,7 @@ export default function ProfessionalEstimatorPage() {
             question: "Sway braces needed",
             type: "checkbox",
             category: "Deck Support",
+            perStructure: true,
           },
           {
             id: "sway_brace_size",
@@ -1297,6 +1405,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Deck Support",
             dependency: "sway_braces_needed",
             dependencyValue: true,
+            perStructure: true,
           },
           {
             id: "sway_brace_material",
@@ -1307,6 +1416,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "sway_braces_needed",
             dependencyValue: true,
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "sway_brace_quantity",
@@ -1315,6 +1425,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Deck Support",
             dependency: "sway_braces_needed",
             dependencyValue: true,
+            perStructure: true,
           },
           // JOIST TAPE SYSTEM
           {
@@ -1322,6 +1433,7 @@ export default function ProfessionalEstimatorPage() {
             question: "Joist tape system",
             type: "checkbox",
             category: "Protection Systems",
+            perStructure: true,
           },
           {
             id: "joist_tape_size",
@@ -1331,6 +1443,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Protection Systems",
             dependency: "joist_tape_needed",
             dependencyValue: true,
+            perStructure: true,
           },
 
           // ===== DECKING QUESTIONS =====
@@ -1351,6 +1464,7 @@ export default function ProfessionalEstimatorPage() {
             ],
             category: "Decking Material",
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "picture_frame_border",
@@ -1359,12 +1473,14 @@ export default function ProfessionalEstimatorPage() {
             options: ["No picture frame", "Single board", "Double board", "Triple board"],
             category: "Decking Design",
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "multi_board_width",
             question: "Multi board width design",
             type: "checkbox",
             category: "Decking Design",
+            perStructure: true,
           },
 
           // ===== RAILING QUESTIONS =====
@@ -1377,6 +1493,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "railing_needed",
             dependencyValue: true,
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "railing_attachment_method",
@@ -1387,6 +1504,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "railing_needed",
             dependencyValue: true,
             allowOther: true,
+            perStructure: true,
           },
 
           // ===== STAIRCASE QUESTIONS =====
@@ -1396,6 +1514,7 @@ export default function ProfessionalEstimatorPage() {
             type: "checkbox-multiple",
             options: ["Yes", "No"],
             category: "Staircase",
+            perStructure: true,
           },
           {
             id: "stair_calculation",
@@ -1404,6 +1523,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Staircase",
             dependency: "stairs_needed",
             dependencyValue: true,
+            perStructure: true,
           },
           {
             id: "number_of_steps",
@@ -1413,6 +1533,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "stairs_needed",
             dependencyValue: true,
             required: true,
+            perStructure: true,
           },
           {
             id: "stair_design",
@@ -1424,6 +1545,7 @@ export default function ProfessionalEstimatorPage() {
             dependencyValue: true,
             required: true,
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "landings_needed",
@@ -1433,6 +1555,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Staircase",
             dependency: "stairs_needed",
             dependencyValue: true,
+            perStructure: true,
           },
           {
             id: "number_of_landings",
@@ -1442,6 +1565,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "landings_needed",
             dependencyValue: true,
             required: true,
+            perStructure: true,
           },
           {
             id: "landing_dimensions",
@@ -1450,6 +1574,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Staircase",
             dependency: "landings_needed",
             dependencyValue: true,
+            perStructure: true,
           },
           {
             id: "number_of_stringers",
@@ -1460,6 +1585,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "stairs_needed",
             dependencyValue: true,
             required: true,
+            perStructure: true,
           },
           {
             id: "stair_enclosure",
@@ -1470,6 +1596,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "stairs_needed",
             dependencyValue: true,
             required: true,
+            perStructure: true,
           },
           {
             id: "stringer_material",
@@ -1481,6 +1608,7 @@ export default function ProfessionalEstimatorPage() {
             dependencyValue: true,
             required: true,
             allowOther: true,
+            perStructure: true,
           },
           {
             id: "stair_braces_needed",
@@ -1490,6 +1618,7 @@ export default function ProfessionalEstimatorPage() {
             category: "Staircase",
             dependency: "stairs_needed",
             dependencyValue: true,
+            perStructure: true,
           },
           {
             id: "landing_material",
@@ -1500,6 +1629,7 @@ export default function ProfessionalEstimatorPage() {
             dependency: "stairs_needed",
             dependencyValue: true,
             allowOther: true,
+            perStructure: true,
           },
         ];
         // Insert newBuildQuestions after basic setup questions (position 5)
@@ -1572,32 +1702,17 @@ export default function ProfessionalEstimatorPage() {
       }
     }
 
-    if (category === "Painting") {
-      questions.splice(-1, 0, {
-        id: "current_paint_type",
-        question: "Current paint/finish type",
-        type: "select-with-other",
-        options: ["Latex paint", "Oil-based paint", "Wood Iron Premium", "Wood Iron Semi-Solid", "Solid stain", "Semi-transparent stain", "Bare wood", "Unknown"],
-        required: true,
-        category: "Current Condition",
-        allowOther: true,
-      }, {
-        id: "last_painted",
-        question: "When was it last painted?",
-        type: "select-with-other",
-        options: ["Within 2 years", "2-5 years ago", "5-10 years ago", "Over 10 years", "Never/Unknown"],
-        category: "Paint History",
-        allowOther: true,
-      });
-    }
 
-    // Add current condition assessment questions for all job types except new builds
-    if (!isNewBuild) {
+    // For Replace Existing / Addition, use the specialized questions instead of refinishing
+    const isReplaceAddition = subcategory === "Replace Existing / Addition";
+
+    if (isReplaceAddition) {
+      // Add Replace/Addition specific questions (includes current conditions & recommended work)
+      questions = [...questions, ...getReplaceAdditionQuestions(category)];
+    } else if (!isNewBuild) {
+      // Add current condition assessment questions for other non-new build job types
       questions = [...questions, ...getCurrentConditionQuestions(category)];
-    }
-
-    // Add recommended repairs/changes questions for all job types except new builds 
-    if (!isNewBuild) {
+      // Add recommended repairs/changes questions (includes refinishing for Refinishing subcategory)
       questions = [...questions, ...getRecommendedRepairsQuestions(category)];
     }
 
@@ -2650,17 +2765,22 @@ const selectCustomer = (customer: any) => {
   setCustomerSearch("");
 };
 
-const shouldShowQuestion = (question: JobQuestion, jobType: string) => {
+const shouldShowQuestion = (question: JobQuestion, jobType: string, structureNumber?: number) => {
   if (question.permitOnly && !jobData.permitRequired) return false;
   if (!question.dependency) return true;
-  
-  const depValue = jobData.jobSpecificAnswers[`${jobType}_${question.dependency}`];
-  
+
+  // Build the dependency key - use structure prefix if this is a per-structure question
+  const depKey = structureNumber && question.perStructure
+    ? `${jobType}_structure_${structureNumber}_${question.dependency}`
+    : `${jobType}_${question.dependency}`;
+
+  const depValue = jobData.jobSpecificAnswers[depKey];
+
   // Handle special dependency values
   if (question.dependencyValue === "hasValue") {
     return depValue !== undefined && depValue !== null && depValue !== "" && depValue > 0;
   }
-  
+
   // Handle checkbox-multiple Yes/No questions
   if (Array.isArray(depValue)) {
     if (question.dependencyValue === true) {
@@ -2669,7 +2789,7 @@ const shouldShowQuestion = (question: JobQuestion, jobType: string) => {
       return depValue.includes("No");
     }
   }
-  
+
   // Handle regular dependency checks
   if (Array.isArray(question.dependencyValue)) return (question.dependencyValue as any[]).includes(depValue);
   return depValue === question.dependencyValue;
@@ -3019,13 +3139,30 @@ const exportMaterialsList = () => {
 };
 
 // Question rendering component
-const renderQuestion = (question: JobQuestion, jobType: string) => {
-  const fieldKey = `${jobType}_${question.id}`;
+const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?: number) => {
+  // If structureNumber is provided, prefix the question ID with structure_N_
+  const effectiveQuestionId = structureNumber
+    ? `structure_${structureNumber}_${question.id}`
+    : question.id;
+  const fieldKey = `${jobType}_${effectiveQuestionId}`;
   const value = jobData.jobSpecificAnswers[fieldKey];
   const error = getFieldError(fieldKey);
   const hasError = !!error;
   const notesKey = `${fieldKey}_notes`;
   const notesValue = jobData.jobSpecificAnswers[notesKey] || "";
+
+  // For dependencies in per-structure questions, also prefix the dependency key
+  const getDependencyValue = (depId: string) => {
+    const depKey = structureNumber
+      ? `${jobType}_structure_${structureNumber}_${depId}`
+      : `${jobType}_${depId}`;
+    return jobData.jobSpecificAnswers[depKey];
+  };
+
+  // Helper to get the correct question ID for handleJobAnswer
+  const getQuestionIdForAnswer = (baseId: string) => {
+    return structureNumber ? `structure_${structureNumber}_${baseId}` : baseId;
+  };
 
   const baseInputClasses = `w-full p-3 border-2 rounded-md focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium bg-white ${
     hasError ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:border-blue-500'
@@ -3038,7 +3175,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
           <input
             type="text"
             value={value || ""}
-            onChange={(e) => handleJobAnswer(jobType, question.id, e.target.value)}
+            onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.value)}
             className={baseInputClasses}
             placeholder={`Enter ${question.question.toLowerCase()}`}
           />
@@ -3050,7 +3187,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
             <input
               type="number"
               value={value || ""}
-              onChange={(e) => handleJobAnswer(jobType, question.id, e.target.value)}
+              onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.value)}
               className={baseInputClasses}
               placeholder="0"
             />
@@ -3066,7 +3203,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
         return (
           <select
             value={value || ""}
-            onChange={(e) => handleJobAnswer(jobType, question.id, e.target.value)}
+            onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.value)}
             className={baseInputClasses}
           >
             <option value="">Select...</option>
@@ -3088,10 +3225,10 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
               value={otherChecked ? "other" : (value || "")}
               onChange={(e) => {
                 if (e.target.value === "other") {
-                  handleJobAnswer(jobType, `${question.id}_other_checked`, true);
+                  handleJobAnswer(jobType, `${getQuestionIdForAnswer(question.id)}_other_checked`, true);
                 } else {
-                  handleJobAnswer(jobType, question.id, e.target.value);
-                  handleJobAnswer(jobType, `${question.id}_other_checked`, false);
+                  handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.value);
+                  handleJobAnswer(jobType, `${getQuestionIdForAnswer(question.id)}_other_checked`, false);
                 }
               }}
               className={baseInputClasses}
@@ -3109,7 +3246,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
               <input
                 type="text"
                 value={otherText || ""}
-                onChange={(e) => handleJobAnswer(jobType, `${question.id}_other_text`, e.target.value)}
+                onChange={(e) => handleJobAnswer(jobType, `${getQuestionIdForAnswer(question.id)}_other_text`, e.target.value)}
                 className={baseInputClasses}
                 placeholder="Please specify..."
               />
@@ -3123,7 +3260,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
             <input
               type="checkbox"
               checked={value || false}
-              onChange={(e) => handleJobAnswer(jobType, question.id, e.target.checked)}
+              onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.checked)}
               className="mr-3 w-5 h-5"
             />
             <span className={`text-sm font-medium ${hasError ? 'text-red-700' : 'text-gray-900'}`}>
@@ -3143,9 +3280,9 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
                   checked={selectedValues.includes(option)}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      handleJobAnswer(jobType, question.id, [...selectedValues, option]);
+                      handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), [...selectedValues, option]);
                     } else {
-                      handleJobAnswer(jobType, question.id, selectedValues.filter((v: string) => v !== option));
+                      handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), selectedValues.filter((v: string) => v !== option));
                     }
                   }}
                   className="mr-3 w-4 h-4"
@@ -3160,7 +3297,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
         return (
           <textarea
             value={value || ""}
-            onChange={(e) => handleJobAnswer(jobType, question.id, e.target.value)}
+            onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.value)}
             className={baseInputClasses}
             rows={3}
             placeholder={`Enter ${question.question.toLowerCase()}...`}
@@ -3180,7 +3317,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
                   onChange={(e) => {
                     const newDims = [...dimensions];
                     newDims[index] = { ...newDims[index], length: e.target.value };
-                    handleJobAnswer(jobType, question.id, newDims);
+                    handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newDims);
                   }}
                   className={baseInputClasses.replace('w-full', 'flex-1')}
                 />
@@ -3192,7 +3329,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
                   onChange={(e) => {
                     const newDims = [...dimensions];
                     newDims[index] = { ...newDims[index], width: e.target.value };
-                    handleJobAnswer(jobType, question.id, newDims);
+                    handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newDims);
                   }}
                   className={baseInputClasses.replace('w-full', 'flex-1')}
                 />
@@ -3201,7 +3338,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
                   <button
                     onClick={() => {
                       const newDims = dimensions.filter((_: any, i: number) => i !== index);
-                      handleJobAnswer(jobType, question.id, newDims);
+                      handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newDims);
                     }}
                     className="p-2 text-red-600 hover:bg-red-100 rounded"
                   >
@@ -3213,7 +3350,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
             <button
               onClick={() => {
                 const newDims = [...dimensions, { length: "", width: "" }];
-                handleJobAnswer(jobType, question.id, newDims);
+                handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newDims);
               }}
               className="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-100 rounded font-medium"
             >
@@ -3228,7 +3365,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
           <div className="space-y-3">
             <select
               value={(value as MaterialCondition)?.condition || ""}
-              onChange={(e) => handleJobAnswer(jobType, question.id, { ...(value as MaterialCondition), condition: e.target.value })}
+              onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), { ...(value as MaterialCondition), condition: e.target.value })}
               className={baseInputClasses}
             >
               <option value="">Select condition...</option>
@@ -3240,7 +3377,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
             </select>
             <textarea
               value={(value as MaterialCondition)?.notes || ""}
-              onChange={(e) => handleJobAnswer(jobType, question.id, { ...(value as MaterialCondition), notes: e.target.value })}
+              onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), { ...(value as MaterialCondition), notes: e.target.value })}
               className={baseInputClasses}
               rows={2}
               placeholder="Detailed condition notes, specific issues observed..."
@@ -3248,7 +3385,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
             <input
               type="text"
               value={(value as MaterialCondition)?.measurements || ""}
-              onChange={(e) => handleJobAnswer(jobType, question.id, { ...(value as MaterialCondition), measurements: e.target.value })}
+              onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), { ...(value as MaterialCondition), measurements: e.target.value })}
               className={baseInputClasses}
               placeholder="Current measurements (if applicable)"
             />
@@ -3261,7 +3398,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
           <div className="space-y-3">
             <textarea
               value={(value as RepairRecommendation)?.description || ""}
-              onChange={(e) => handleJobAnswer(jobType, question.id, { ...(value as RepairRecommendation), description: e.target.value })}
+              onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), { ...(value as RepairRecommendation), description: e.target.value })}
               className={baseInputClasses}
               rows={3}
               placeholder={question.type === "condition-assessment" ?
@@ -3271,7 +3408,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
             <input
               type="text"
               value={(value as RepairRecommendation)?.priority || ""}
-              onChange={(e) => handleJobAnswer(jobType, question.id, { ...(value as RepairRecommendation), priority: e.target.value })}
+              onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), { ...(value as RepairRecommendation), priority: e.target.value })}
               className={baseInputClasses}
               placeholder={question.type === "condition-assessment" ?
                 "Issues priority level" : 
@@ -3280,7 +3417,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
             <input
               type="text"
               value={(value as RepairRecommendation)?.cost_estimate || ""}
-              onChange={(e) => handleJobAnswer(jobType, question.id, { ...(value as RepairRecommendation), cost_estimate: e.target.value })}
+              onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), { ...(value as RepairRecommendation), cost_estimate: e.target.value })}
               className={baseInputClasses}
               placeholder="Estimated cost ($)"
             />
@@ -3448,10 +3585,59 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
         return (
           <textarea
             value={value || ""}
-            onChange={(e) => handleJobAnswer(jobType, question.id, e.target.value)}
+            onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.value)}
             className={baseInputClasses + " min-h-[150px]"}
             placeholder="Enter materials list and notes..."
           />
+        );
+
+      case "add-sections":
+        const sections = value || [{ description: "" }];
+        return (
+          <div className="space-y-3">
+            {sections.map((section: any, index: number) => (
+              <div key={index} className="p-3 border border-gray-200 rounded-md bg-gray-50">
+                <div className="flex items-start space-x-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Area {index + 1}</label>
+                    <textarea
+                      placeholder={question.placeholder || "Describe this area..."}
+                      value={section.description || ""}
+                      onChange={(e) => {
+                        const newSections = [...sections];
+                        newSections[index] = { ...newSections[index], description: e.target.value };
+                        handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newSections);
+                      }}
+                      className={baseInputClasses}
+                      rows={3}
+                    />
+                  </div>
+                  {sections.length > 1 && (
+                    <button
+                      onClick={() => {
+                        const newSections = sections.filter((_: any, i: number) => i !== index);
+                        handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newSections);
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-100 rounded mt-6"
+                      title="Remove this area"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                const newSections = [...sections, { description: "" }];
+                handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newSections);
+              }}
+              className="flex items-center px-4 py-2 text-blue-600 hover:bg-blue-100 rounded font-medium border border-blue-300"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Another Area
+            </button>
+          </div>
         );
 
       default:
@@ -3459,7 +3645,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
           <input
             type="text"
             value={value || ""}
-            onChange={(e) => handleJobAnswer(jobType, question.id, e.target.value)}
+            onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.value)}
             className={baseInputClasses}
             placeholder={`Enter ${question.question.toLowerCase()}`}
           />
@@ -3481,7 +3667,7 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
           <input
             type="text"
             value={notesValue}
-            onChange={(e) => handleJobAnswer(jobType, `${question.id}_notes`, e.target.value)}
+            onChange={(e) => handleJobAnswer(jobType, `${getQuestionIdForAnswer(question.id)}_notes`, e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-700 text-sm bg-gray-50"
             placeholder="Additional notes for this question..."
           />
@@ -3494,51 +3680,80 @@ const renderQuestion = (question: JobQuestion, jobType: string) => {
 
 // Main component render
 return (
-  <div className="min-h-screen bg-gray-100 py-8">
-    <div className="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      {/* Header with Auto-Save Indicator */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 flex-1 text-center">
-          Professional Field Estimator - Colorado Licensed
-        </h1>
+  <div className="min-h-screen py-6 px-4">
+    <div className="max-w-6xl mx-auto">
+      {/* Modern Header Card */}
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+        <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                <Calculator className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+                  Professional Field Estimator
+                </h1>
+                <p className="text-blue-100 text-sm mt-1 flex items-center gap-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white">
+                    Colorado Licensed
+                  </span>
+                  <span className="text-blue-200">Deck Doctor</span>
+                </p>
+              </div>
+            </div>
 
-        {/* Auto-Save Status Indicator */}
-        <div className="flex items-center gap-2 text-sm">
-          {autoSaving ? (
-            <div className="flex items-center text-blue-600">
-              <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Saving...
+            {/* Auto-Save Status Indicator */}
+            <div className="flex items-center gap-3">
+              {autoSaving ? (
+                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur rounded-lg">
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-white text-sm font-medium">Saving...</span>
+                </div>
+              ) : lastSaved ? (
+                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-300" />
+                  <span className="text-white/80 text-sm">Saved {formatTimeAgo(lastSaved)}</span>
+                </div>
+              ) : null}
             </div>
-          ) : lastSaved ? (
-            <div className="text-gray-500">
-              Saved {formatTimeAgo(lastSaved)}
-            </div>
-          ) : null}
+          </div>
         </div>
       </div>
 
+      {/* Main Content Card */}
+      <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
       {/* Validation Summary */}
       {validationErrors.length > 0 && (
-        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
-          <div className="flex items-center mb-2">
-            <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
-            <h3 className="font-bold text-red-800">Please Complete Required Fields</h3>
+        <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-red-800">Please Complete Required Fields</h3>
+              <p className="text-red-600 text-sm">
+                {validationErrors.length} field(s) need attention before saving.
+              </p>
+            </div>
           </div>
-          <p className="text-red-700 text-sm">
-            {validationErrors.length} field(s) need attention before saving.
-          </p>
         </div>
       )}
 
       {/* Basic Information */}
-      <div className="mb-8 p-6 bg-blue-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-          <User className="w-5 h-5 mr-2" />
-          Basic Information
-        </h2>
+      <div className="mb-8 bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <User className="w-4 h-4 text-white" />
+            </div>
+            Basic Information
+          </h2>
+        </div>
+        <div className="p-6">
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -3719,14 +3934,18 @@ return (
       </div>
 
       {/* Job Type Selection */}
-      <div className="mb-8 p-6 bg-purple-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-          <BarChart className="w-5 h-5 mr-2" />
-          Project Types *
-        </h2>
-
+      <div className="mb-8 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <BarChart className="w-4 h-4 text-white" />
+            </div>
+            Project Types
+          </h2>
+        </div>
+        <div className="p-6">
         {getFieldError("jobTypes") && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 rounded-md">
+          <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
             <p className="text-red-700 text-sm font-medium flex items-center">
               <AlertTriangle className="w-4 h-4 mr-1" />
               {getFieldError("jobTypes")?.message}
@@ -3735,8 +3954,8 @@ return (
         )}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(jobTypeCategories).map(([category, details]) => (
-            <div key={category} className="bg-white p-4 rounded-lg border-2 border-gray-200 shadow-sm">
-              <h3 className="font-bold text-gray-800 mb-3">{category}</h3>
+            <div key={category} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+              <h3 className="font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100">{category}</h3>
               <div className="space-y-2">
                 {details.subcategories.map((sub) => {
                   const jobTypeKey = `${category} - ${sub}`;
@@ -3756,17 +3975,22 @@ return (
             </div>
           ))}
         </div>
+        </div>
       </div>
 
       {/* Customer Information */}
-      <div className="mb-8 p-6 bg-green-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-          <Home className="w-5 h-5 mr-2" />
-          Customer Information
-        </h2>
-
+      <div className="mb-8 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <Home className="w-4 h-4 text-white" />
+            </div>
+            Customer Information
+          </h2>
+        </div>
+        <div className="p-6">
         {/* Customer Search */}
-        <div className="mb-6 p-4 bg-white rounded-lg border-2 border-blue-300">
+        <div className="mb-6 p-4 bg-white rounded-xl border border-blue-200 shadow-sm">
           <label className="block text-sm font-bold text-gray-900 mb-2">
             Search Existing Customer
           </label>
@@ -4185,12 +4409,20 @@ return (
         )}
       </div>
 
+      </div>
+      </div>
+
       {/* Project Information */}
-      <div className="mb-8 p-6 bg-yellow-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-          <Building className="w-5 h-5 mr-2" />
-          Project Information
-        </h2>
+      <div className="mb-8 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border border-amber-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <Building className="w-4 h-4 text-white" />
+            </div>
+            Project Information
+          </h2>
+        </div>
+        <div className="p-6">
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -4246,9 +4478,20 @@ return (
         </div>
       </div>
 
+        </div>
+      </div>
+
       {/* Estimator-Only: Customer/Project Grade */}
-      <div className="mb-8 p-6 bg-gray-100 rounded-lg border-2 border-gray-400">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Estimator Only - Project Assessment</h2>
+      <div className="mb-8 bg-gradient-to-br from-slate-100 to-gray-100 rounded-xl border border-slate-300 overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-600 to-gray-700 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <User className="w-4 h-4 text-white" />
+            </div>
+            Estimator Only - Project Assessment
+          </h2>
+        </div>
+        <div className="p-6">
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -4270,18 +4513,26 @@ return (
         </div>
       </div>
 
+        </div>
+      </div>
+
       {/* Job-Specific Questions */}
       {jobData.jobTypes.map((jobType) => {
         const questions = getJobQuestions(jobType);
         const groupedQuestions = groupQuestionsByCategory(questions);
         const isNewBuild = jobType.includes("New Build");
-        
+
         return (
-          <div key={jobType} className="mb-8 p-6 bg-gray-50 rounded-lg border-2 border-gray-300">
-            <h2 className="text-xl font-semibold mb-6 text-gray-800 flex items-center">
-              <Ruler className="w-5 h-5 mr-2" />
-              {jobType} - Detailed Questions
-            </h2>
+          <div key={jobType} className="mb-8 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Ruler className="w-4 h-4 text-white" />
+                </div>
+                {jobType}
+              </h2>
+            </div>
+            <div className="p-6">
             {Object.entries(groupedQuestions).map(([category, categoryQuestions]) => (
               <div key={category} className="mb-6">
                 {/* General Questions (always shown first) */}
@@ -4300,17 +4551,75 @@ return (
                     </button>
                     {expandedSections[`${jobType}_${category}_general`] && (
                       <div className="space-y-4 ml-4">
-                        {categoryQuestions.general
-                          .filter((q) => shouldShowQuestion(q, jobType))
-                          .map((question) => (
-                            <div key={question.id} className="bg-white p-4 rounded-lg border border-gray-200">
-                              <label className="block text-sm font-medium text-gray-900 mb-2">
-                                {question.question}
-                                {question.required && <span className="text-red-500 ml-1">*</span>}
-                              </label>
-                              {renderQuestion(question, jobType)}
-                            </div>
-                          ))}
+                        {(() => {
+                          // For non-structure questions, filter normally
+                          const nonStructureQuestions = categoryQuestions.general.filter((q) => !q.perStructure && shouldShowQuestion(q, jobType));
+                          // For per-structure questions, only apply non-dependency filters here
+                          // Dependency filtering happens per-structure in the loop below
+                          const perStructureQuestions = categoryQuestions.general.filter((q) => {
+                            if (!q.perStructure) return false;
+                            // Filter by permit requirement only - dependencies checked per-structure
+                            if (q.permitOnly && !jobData.permitRequired) return false;
+                            return true;
+                          });
+
+                          // Get number of structures (default to 1)
+                          const baseCategory = jobType.split(" - ")[0];
+                          const numStructuresKey = `${jobType}_number_of_structures`;
+                          const numStructures = parseInt(jobData.jobSpecificAnswers[numStructuresKey]) || 1;
+
+                          let questionCounter = 0;
+
+                          return (
+                            <>
+                              {/* Non-structure questions first */}
+                              {nonStructureQuestions.map((question) => {
+                                questionCounter++;
+                                return (
+                                  <div key={question.id} className="bg-white p-4 rounded-lg border border-gray-200">
+                                    <label className="block text-sm font-medium text-gray-900 mb-2">
+                                      <span className="text-gray-500 mr-2">#{questionCounter}</span>
+                                      {question.question}
+                                      {question.required && <span className="text-red-500 ml-1">*</span>}
+                                    </label>
+                                    {renderQuestion(question, jobType)}
+                                  </div>
+                                );
+                              })}
+
+                              {/* Per-structure questions - repeat for each structure */}
+                              {perStructureQuestions.length > 0 && Array.from({ length: numStructures }, (_, structureIndex) => {
+                                const structureNum = structureIndex + 1;
+                                // Filter questions that should show for this specific structure (accounting for dependencies)
+                                const visibleStructureQuestions = perStructureQuestions.filter(q => shouldShowQuestion(q, jobType, structureNum));
+                                if (visibleStructureQuestions.length === 0) return null;
+                                return (
+                                  <div key={`structure_${structureNum}`} className="mt-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                                    <h4 className="text-lg font-bold text-blue-800 mb-4 flex items-center">
+                                      <Building className="w-5 h-5 mr-2" />
+                                      Structure {structureNum} {numStructures > 1 ? `of ${numStructures}` : ''}
+                                    </h4>
+                                    <div className="space-y-4">
+                                      {visibleStructureQuestions.map((question) => {
+                                        questionCounter++;
+                                        return (
+                                          <div key={`${question.id}_structure_${structureNum}`} className="bg-white p-4 rounded-lg border border-blue-200">
+                                            <label className="block text-sm font-medium text-gray-900 mb-2">
+                                              <span className="text-gray-500 mr-2">#{questionCounter}</span>
+                                              {question.question}
+                                              {question.required && <span className="text-red-500 ml-1">*</span>}
+                                            </label>
+                                            {renderQuestion(question, jobType, structureNum)}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -4341,9 +4650,10 @@ return (
                         </div>
                         {categoryQuestions.current
                           .filter((q) => shouldShowQuestion(q, jobType))
-                          .map((question) => (
+                          .map((question, questionIndex) => (
                             <div key={question.id} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                               <label className="block text-sm font-medium text-blue-900 mb-2">
+                                <span className="text-blue-500 mr-2">#{questionIndex + 1}</span>
                                 {question.question}
                                 {question.required && <span className="text-red-500 ml-1">*</span>}
                               </label>
@@ -4380,9 +4690,10 @@ return (
                         </div>
                         {categoryQuestions.recommended
                           .filter((q) => shouldShowQuestion(q, jobType))
-                          .map((question) => (
+                          .map((question, questionIndex) => (
                             <div key={question.id} className="bg-green-50 p-4 rounded-lg border border-green-200">
                               <label className="block text-sm font-medium text-green-900 mb-2">
+                                <span className="text-green-600 mr-2">#{questionIndex + 1}</span>
                                 {question.question}
                                 {question.required && <span className="text-red-500 ml-1">*</span>}
                               </label>
@@ -4395,6 +4706,7 @@ return (
                 )}
               </div>
             ))}
+            </div>
           </div>
         );
       })}
@@ -4460,11 +4772,16 @@ return (
       </div>
 
       {/* Notes Sections */}
-      <div className="mb-8 p-6 bg-cyan-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-          <NotebookPen className="w-5 h-5 mr-2" />
-          Notes & Observations
-        </h2>
+      <div className="mb-8 bg-gradient-to-br from-cyan-50 to-sky-50 rounded-xl border border-cyan-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-cyan-600 to-sky-600 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <NotebookPen className="w-4 h-4 text-white" />
+            </div>
+            Notes & Observations
+          </h2>
+        </div>
+        <div className="p-6">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -4491,14 +4808,20 @@ return (
             />
           </div>
         </div>
+        </div>
       </div>
 
       {/* Estimator Follow-up Notes */}
-      <div className="mb-8 p-6 bg-teal-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-          <User className="w-5 h-5 mr-2" />
-          Estimator Follow-up Notes
-        </h2>
+      <div className="mb-8 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-xl border border-teal-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-teal-600 to-emerald-600 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <User className="w-4 h-4 text-white" />
+            </div>
+            Estimator Follow-up Notes
+          </h2>
+        </div>
+        <div className="p-6">
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-2">
             Notes for Next Appointment / Follow-up
@@ -4517,6 +4840,7 @@ return (
             💡 <strong>Use this for:</strong> Customer feedback, concerns raised, follow-up timing, competition mentioned, decision timeline, special considerations for next visit.
           </p>
         </div>
+        </div>
       </div>
 
       {/* Pricing Summary */}
@@ -4531,11 +4855,16 @@ return (
       />
 
       {/* Span Charts & Tools */}
-      <div className="mb-8 p-6 bg-amber-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-          <Layers className="w-5 h-5 mr-2" />
-          Reference Tools
-        </h2>
+      <div className="mb-8 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <Layers className="w-4 h-4 text-white" />
+            </div>
+            Reference Tools
+          </h2>
+        </div>
+        <div className="p-6">
         <div className="mb-4 p-3 bg-blue-100 rounded-lg border-l-4 border-blue-500">
           <p className="text-blue-800 text-sm font-medium">
             <strong>Joist Spans:</strong> Distance joists can span between beams
@@ -4938,9 +5267,9 @@ return (
                     {costEstimate.itemizedLabor.map((item, idx) => (
                       <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-2 px-3 text-gray-800">{item.task}</td>
-                        <td className="text-right py-2 px-3 text-gray-700">{item.units.toFixed(1)}</td>
-                        <td className="text-right py-2 px-3 text-gray-700">${item.rate.toFixed(2)}/unit</td>
-                        <td className="text-right py-2 px-3 font-bold text-gray-900">${item.total.toFixed(2)}</td>
+                        <td className="text-right py-2 px-3 text-gray-700">{(item.units ?? 0).toFixed(1)}</td>
+                        <td className="text-right py-2 px-3 text-gray-700">${(item.rate ?? 0).toFixed(2)}/unit</td>
+                        <td className="text-right py-2 px-3 font-bold text-gray-900">${(item.total ?? 0).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -4959,17 +5288,19 @@ return (
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-4 justify-center mb-8">
+      <div className="mb-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 shadow-xl">
+        <h3 className="text-white text-lg font-semibold mb-4 text-center">Quick Actions</h3>
+        <div className="flex flex-wrap gap-3 justify-center">
         <button
           onClick={saveJobToFirebase}
           disabled={isSaving || validationErrors.length > 0}
-          className={`px-6 py-3 rounded-md font-bold flex items-center ${
+          className={`px-5 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg ${
             isSaving || validationErrors.length > 0
-              ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700'
+              ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+              : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:shadow-green-500/30 hover:-translate-y-0.5'
           }`}
         >
-          <Save className="w-5 h-5 mr-2" />
+          <Save className="w-5 h-5" />
           {isSaving ? "Saving..." : "Save to Cloud"}
         </button>
         <button
@@ -4988,9 +5319,9 @@ return (
               alert('Failed to save draft. Please try again.');
             }
           }}
-          className="px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 font-bold flex items-center"
+          className="px-5 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl hover:from-slate-700 hover:to-slate-800 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:-translate-y-0.5"
         >
-          <Save className="w-5 h-5 mr-2" />
+          <Save className="w-5 h-5" />
           Save Draft
         </button>
         <button
@@ -5001,16 +5332,16 @@ return (
               alert('Draft cleared successfully!');
             }
           }}
-          className="px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 font-bold flex items-center"
+          className="px-5 py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-red-500/30 hover:-translate-y-0.5"
         >
-          <FileText className="w-5 h-5 mr-2" />
+          <FileText className="w-5 h-5" />
           Clear Draft
         </button>
         <button
           onClick={showEstimatePreview}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-bold flex items-center"
+          className="px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5"
         >
-          <FileText className="w-5 h-5 mr-2" />
+          <FileText className="w-5 h-5" />
           Preview Estimate
         </button>
         <button
@@ -5025,25 +5356,26 @@ return (
             };
             emailEstimate(jobRecord);
           }}
-          className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold flex items-center"
+          className="px-5 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl hover:from-blue-600 hover:to-cyan-700 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5"
         >
-          <User className="w-5 h-5 mr-2" />
+          <User className="w-5 h-5" />
           Email Estimate
         </button>
         <button
           onClick={exportMaterialsList}
-          className="px-6 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 font-bold flex items-center"
+          className="px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5"
         >
-          <Download className="w-5 h-5 mr-2" />
-          Export Materials CSV
+          <Download className="w-5 h-5" />
+          Export Materials
         </button>
         <button
           onClick={() => setShowDrawingModal(true)}
-          className="px-6 py-3 bg-orange-600 text-white rounded-md hover:bg-orange-700 font-bold flex items-center"
+          className="px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5"
         >
-          <Layers className="w-5 h-5 mr-2" />
-          Generate 2D Drawing
+          <Layers className="w-5 h-5" />
+          2D Drawing
         </button>
+        </div>
       </div>
 
       {/* Drawing Gallery */}
@@ -5121,7 +5453,15 @@ return (
         </div>
         <div className="mt-2 p-3 bg-blue-100 rounded-lg border-l-4 border-blue-500">
           <p className="text-blue-800 text-sm font-medium">
-            🔗 <strong>Firebase Console Access:</strong> https://console.firebase.google.com/project/pocket-estimator-5c6a6/firestore
+            🔗 <strong>Firebase Console Access:</strong>{" "}
+            <a
+              href="https://console.firebase.google.com/project/pocket-estimator-5c6a6/firestore"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline hover:text-blue-800"
+            >
+              https://console.firebase.google.com/project/pocket-estimator-5c6a6/firestore
+            </a>
           </p>
         </div>
       </div>
@@ -5178,15 +5518,16 @@ return (
       )}
 
       {/* Drawing Modal */}
-      {showDrawingModal && (
-        <DrawingModal
-          onClose={() => setShowDrawingModal(false)}
-          onSave={(drawing) => {
-            setDrawings([...drawings, drawing]);
-            setShowDrawingModal(false);
-          }}
-        />
-      )}
+      <DrawingModal
+        isOpen={showDrawingModal}
+        onClose={() => setShowDrawingModal(false)}
+        jobData={jobData}
+        uploadedFiles={uploadedFiles}
+        onSaveDrawing={(drawing) => {
+          setDrawings([...drawings, drawing]);
+          setShowDrawingModal(false);
+        }}
+      />
     </div>
   </div>
 );
