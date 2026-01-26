@@ -1,5 +1,19 @@
 import { useState } from "react";
-import { DollarSign, Calculator, Package, User } from "lucide-react";
+import {
+  DollarSign,
+  Calculator,
+  Package,
+  Users,
+  ChevronDown,
+  ChevronUp,
+  Percent,
+  FileText,
+  Wrench,
+  TrendingUp,
+  Sparkles,
+  Clock,
+  AlertCircle
+} from "lucide-react";
 
 interface PricingSummaryProps {
   jobTypes: string[];
@@ -26,15 +40,14 @@ export function PricingSummary({
   const getHourlyRate = (): number => {
     if (assignedCrew === "Alex") return 166;
     if (assignedCrew === "Huber") return 95;
-    // Default or "Both" - use average
-    return 130.5; // Average of 166 and 95
+    return 130.5;
   };
 
-  const getCrewRateLabel = (): string => {
-    if (assignedCrew === "Alex") return "Crew A - Alex ($166/hr)";
-    if (assignedCrew === "Huber") return "Crew B - Huber ($95/hr)";
-    if (assignedCrew === "Both") return "Both Crews (avg $130.50/hr)";
-    return "No crew assigned (avg $130.50/hr)";
+  const getCrewInfo = () => {
+    if (assignedCrew === "Alex") return { name: "Crew A - Alex", rate: 166, color: "emerald" };
+    if (assignedCrew === "Huber") return { name: "Crew B - Huber", rate: 95, color: "blue" };
+    if (assignedCrew === "Both") return { name: "Both Crews", rate: 130.5, color: "purple" };
+    return { name: "No Crew Assigned", rate: 130.5, color: "gray" };
   };
 
   // Calculate total material costs from all questions
@@ -43,9 +56,7 @@ export function PricingSummary({
     Object.keys(jobSpecificAnswers).forEach((key) => {
       if (key.endsWith('_material_cost')) {
         const value = parseFloat(jobSpecificAnswers[key] || 0);
-        if (!isNaN(value)) {
-          total += value;
-        }
+        if (!isNaN(value)) total += value;
       }
     });
     return total;
@@ -57,9 +68,7 @@ export function PricingSummary({
     Object.keys(jobSpecificAnswers).forEach((key) => {
       if (key.endsWith('_labor_hours')) {
         const value = parseFloat(jobSpecificAnswers[key] || 0);
-        if (!isNaN(value)) {
-          total += value;
-        }
+        if (!isNaN(value)) total += value;
       }
     });
     return total;
@@ -84,14 +93,12 @@ export function PricingSummary({
               unit: "linear ft",
               cost: totalSqFt * 2.2 * 4.5 * 1.15
             });
-
             breakdown.push({
-              name: "2x8 Pressure Treated Joists",
+              name: "2x8 PT Joists",
               quantity: (totalSqFt / 10).toFixed(1),
               unit: "pieces",
               cost: (totalSqFt / 10) * 12 * 1.75 * 1.15
             });
-
             breakdown.push({
               name: "2x10 Beams",
               quantity: "100",
@@ -136,7 +143,6 @@ export function PricingSummary({
               rate: 75,
               cost: (totalSqFt / 50) * 75
             });
-
             breakdown.push({
               name: "Decking Installation",
               hours: (totalSqFt / 75).toFixed(1),
@@ -182,242 +188,489 @@ export function PricingSummary({
   const calculateLaborTotal = () => {
     const breakdownItems = getLaborBreakdown();
     const calculatedTotal = breakdownItems.reduce((sum, item) => sum + item.cost, 0);
-    // Labor hours are at hourly rate based on assigned crew
     const userEnteredHours = getTotalLaborHours();
     const hourlyRate = getHourlyRate();
     const userEnteredLaborCost = userEnteredHours * hourlyRate;
     return calculatedTotal + userEnteredLaborCost;
   };
 
-  const calculateOverheadAndProfit = () => {
+  const calculateOverhead = () => {
     const subtotal = calculateMaterialsTotal() + calculateLaborTotal();
-    const overhead = subtotal * 0.10;
-    const profit = subtotal * 0.20;
-    return overhead + profit;
+    return subtotal * 0.10;
+  };
+
+  const calculateProfit = () => {
+    const subtotal = calculateMaterialsTotal() + calculateLaborTotal();
+    return subtotal * 0.20;
   };
 
   const calculateEstimatedTotal = () => {
     const materials = calculateMaterialsTotal();
     const labor = calculateLaborTotal();
-    const overheadProfit = calculateOverheadAndProfit();
+    const overhead = calculateOverhead();
+    const profit = calculateProfit();
     const permit = permitRequired ? 250 : 0;
     const painCharge = painInTheAssCharge || 0;
-    return materials + labor + overheadProfit + permit + painCharge;
+    return materials + labor + overhead + profit + permit + painCharge;
   };
 
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  // Calculate percentage for visual breakdown
+  const total = calculateEstimatedTotal();
+  const materialsPercent = total > 0 ? (calculateMaterialsTotal() / total) * 100 : 0;
+  const laborPercent = total > 0 ? (calculateLaborTotal() / total) * 100 : 0;
+  const overheadPercent = total > 0 ? (calculateOverhead() / total) * 100 : 0;
+  const profitPercent = total > 0 ? (calculateProfit() / total) * 100 : 0;
+
+  const crewInfo = getCrewInfo();
+
+  // Empty state
+  if (jobTypes.length === 0) {
+    return (
+      <div className="mb-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-xl">
+                <DollarSign className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Pricing Estimate</h2>
+            </div>
+          </div>
+          <div className="p-12 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-neutral-100 flex items-center justify-center">
+              <Calculator className="w-10 h-10 text-neutral-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-700 mb-2">No Job Types Selected</h3>
+            <p className="text-neutral-500">Select job types above to generate a pricing estimate</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-300 shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center">
-        <DollarSign className="w-6 h-6 mr-2 text-green-600" />
-        Pricing Summary
-      </h2>
-
-      {jobTypes.length > 0 ? (
-        <div className="space-y-6">
-          {/* Quick Estimate Display */}
-          <div className="bg-white p-6 rounded-lg border-2 border-green-400 shadow-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Estimated Total</h3>
-              <div className="text-3xl font-bold text-green-600">
-                ${calculateEstimatedTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+    <div className="mb-8 space-y-6">
+      {/* Main Total Card */}
+      <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                <DollarSign className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Project Estimate</h2>
+                <p className="text-emerald-100 text-sm">{jobTypes.join(" + ")}</p>
               </div>
             </div>
+            <div className="text-right">
+              <p className="text-emerald-100 text-sm font-medium">Total Estimate</p>
+              <p className="text-4xl font-black text-white tracking-tight">
+                ${formatCurrency(calculateEstimatedTotal())}
+              </p>
+            </div>
+          </div>
+        </div>
 
-            <div className="grid md:grid-cols-3 gap-4 pt-4 border-t-2 border-gray-200">
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-1">Materials</div>
-                <div className="text-lg font-bold text-blue-600">
-                  ${calculateMaterialsTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-neutral-100">
+          {/* Materials */}
+          <div className="p-5 bg-gradient-to-b from-blue-50 to-white">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Materials</span>
+            </div>
+            <p className="text-2xl font-bold text-neutral-800">${formatCurrency(calculateMaterialsTotal())}</p>
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${materialsPercent}%` }} />
               </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-1">Labor</div>
-                <div className="text-lg font-bold text-purple-600">
-                  ${calculateLaborTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-1">Overhead & Profit</div>
-                <div className="text-lg font-bold text-orange-600">
-                  ${calculateOverheadAndProfit().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </div>
+              <span className="text-xs font-medium text-blue-600">{materialsPercent.toFixed(0)}%</span>
             </div>
           </div>
 
-          {/* Detailed Breakdown Toggle */}
-          <div>
-            <button
-              onClick={() => setShowDetailedPricing(!showDetailedPricing)}
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center transition-colors"
-            >
-              <Calculator className="w-5 h-5 mr-2" />
-              {showDetailedPricing ? "Hide" : "Show"} Detailed Cost Breakdown
-            </button>
+          {/* Labor */}
+          <div className="p-5 bg-gradient-to-b from-purple-50 to-white">
+            <div className="flex items-center gap-2 mb-2">
+              <Wrench className="w-4 h-4 text-purple-600" />
+              <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Labor</span>
+            </div>
+            <p className="text-2xl font-bold text-neutral-800">${formatCurrency(calculateLaborTotal())}</p>
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className="flex-1 h-1.5 bg-purple-100 rounded-full overflow-hidden">
+                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${laborPercent}%` }} />
+              </div>
+              <span className="text-xs font-medium text-purple-600">{laborPercent.toFixed(0)}%</span>
+            </div>
           </div>
 
-          {/* Detailed Pricing Breakdown */}
-          {showDetailedPricing && (
-            <div className="bg-white p-6 rounded-lg border-2 border-blue-300 space-y-6">
-              {/* Materials Breakdown */}
+          {/* Overhead */}
+          <div className="p-5 bg-gradient-to-b from-amber-50 to-white">
+            <div className="flex items-center gap-2 mb-2">
+              <Percent className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Overhead</span>
+            </div>
+            <p className="text-2xl font-bold text-neutral-800">${formatCurrency(calculateOverhead())}</p>
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className="flex-1 h-1.5 bg-amber-100 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${overheadPercent}%` }} />
+              </div>
+              <span className="text-xs font-medium text-amber-600">{overheadPercent.toFixed(0)}%</span>
+            </div>
+          </div>
+
+          {/* Profit */}
+          <div className="p-5 bg-gradient-to-b from-emerald-50 to-white">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Profit</span>
+            </div>
+            <p className="text-2xl font-bold text-neutral-800">${formatCurrency(calculateProfit())}</p>
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className="flex-1 h-1.5 bg-emerald-100 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${profitPercent}%` }} />
+              </div>
+              <span className="text-xs font-medium text-emerald-600">{profitPercent.toFixed(0)}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Visual Cost Bar */}
+        <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Cost Distribution</span>
+          </div>
+          <div className="h-4 bg-neutral-200 rounded-full overflow-hidden flex">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-500"
+              style={{ width: `${materialsPercent}%` }}
+              title="Materials"
+            />
+            <div
+              className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-500"
+              style={{ width: `${laborPercent}%` }}
+              title="Labor"
+            />
+            <div
+              className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500"
+              style={{ width: `${overheadPercent}%` }}
+              title="Overhead"
+            />
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+              style={{ width: `${profitPercent}%` }}
+              title="Profit"
+            />
+          </div>
+          <div className="flex justify-between mt-2">
+            <div className="flex gap-4 text-xs">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                <span className="text-neutral-600">Materials</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                <span className="text-neutral-600">Labor</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span className="text-neutral-600">Overhead (10%)</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span className="text-neutral-600">Profit (20%)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Adjustment Controls */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Complexity Charge Card */}
+        <div className="bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
+          <div className="px-5 py-4 bg-gradient-to-r from-orange-500 to-red-500">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-white" />
+              </div>
               <div>
-                <h4 className="font-bold text-gray-800 mb-3 text-lg flex items-center">
-                  <Package className="w-5 h-5 mr-2 text-blue-600" />
-                  Materials Breakdown
-                </h4>
-                <div className="space-y-2 text-sm">
-                  {getMaterialsBreakdown().map((item, idx) => (
-                    <div key={idx} className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-gray-700">
-                        {item.name} <span className="text-gray-500">({item.quantity} {item.unit})</span>
-                      </span>
-                      <span className="font-medium text-blue-600">
-                        ${item.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between py-2 font-bold text-blue-700">
-                    <span>Materials Subtotal (with markup)</span>
-                    <span>${calculateMaterialsTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Labor Breakdown */}
-              <div>
-                <h4 className="font-bold text-gray-800 mb-3 text-lg flex items-center">
-                  <User className="w-5 h-5 mr-2 text-purple-600" />
-                  Labor Breakdown
-                </h4>
-                <div className="space-y-2 text-sm">
-                  {getLaborBreakdown().map((item, idx) => (
-                    <div key={idx} className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-gray-700">
-                        {item.name} <span className="text-gray-500">({item.hours} hours @ ${item.rate}/hr)</span>
-                      </span>
-                      <span className="font-medium text-purple-600">
-                        ${item.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between py-2 font-bold text-purple-700">
-                    <span>Labor Subtotal</span>
-                    <span>${calculateLaborTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* User-Entered Costs Summary */}
-              <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-300">
-                <h4 className="font-bold text-gray-800 mb-3 text-lg">Field Estimator Entry Totals</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between py-2">
-                    <span className="text-gray-700 font-medium">Total Material Costs (from questions)</span>
-                    <span className="font-bold text-blue-600">
-                      ${getTotalMaterialCosts().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="text-gray-700 font-medium">Total Labor Hours (from questions)</span>
-                    <span className="font-bold text-purple-600">
-                      {getTotalLaborHours().toFixed(1)} hours
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2 pt-2 border-t border-yellow-400">
-                    <span className="text-gray-700 font-medium">Labor Cost ({getCrewRateLabel()})</span>
-                    <span className="font-bold text-purple-600">
-                      ${(getTotalLaborHours() * getHourlyRate()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-600 mt-3 italic">
-                  These totals are from the material cost and labor hours fields entered in each question section.
-                </p>
-              </div>
-
-              {/* Final Totals */}
-              <div className="pt-4 border-t-2 border-gray-300">
-                <div className="space-y-2 text-base">
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Subtotal</span>
-                    <span className="font-medium">${(calculateMaterialsTotal() + calculateLaborTotal()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Overhead (10%)</span>
-                    <span className="font-medium">${(calculateOverheadAndProfit() * 0.33).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Profit (20%)</span>
-                    <span className="font-medium">${(calculateOverheadAndProfit() * 0.67).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  {permitRequired && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Permit Fee</span>
-                      <span className="font-medium">$250.00</span>
-                    </div>
-                  )}
-                  {painInTheAssCharge > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Additional Complexity Charge</span>
-                      <span className="font-medium">${painInTheAssCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-xl font-bold text-green-600 pt-2 border-t-2 border-green-300">
-                    <span>Total Estimate</span>
-                    <span>${calculateEstimatedTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pricing Notes */}
-              <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                <p className="text-yellow-800 text-sm">
-                  <strong>Note:</strong> This is an automated estimate based on the information provided. Final pricing may vary based on site conditions, material availability, and additional requirements discovered during the project.
-                </p>
+                <h3 className="font-bold text-white">Complexity Charge</h3>
+                <p className="text-orange-100 text-xs">Difficult access, site conditions, etc.</p>
               </div>
             </div>
-          )}
-
-          {/* Pricing Controls */}
-          <div className="bg-white p-4 rounded-lg border border-gray-300">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Additional Complexity Charge ("Pain in the Ass" Factor)
-                </label>
-                <input
-                  type="number"
-                  value={painInTheAssCharge || 0}
-                  onChange={(e) => onPainInTheAssChargeChange(parseFloat(e.target.value) || 0)}
-                  className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white"
-                  placeholder="0.00"
-                  step="50"
-                  min="0"
-                />
-                <p className="text-xs text-gray-600 mt-1">Add extra charge for difficult site conditions, tight access, or complex requirements</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Permit Required?
-                </label>
-                <select
-                  value={permitRequired ? "yes" : "no"}
-                  onChange={(e) => onPermitRequiredChange(e.target.value === "yes")}
-                  className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white"
+          </div>
+          <div className="p-5">
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 font-semibold">$</span>
+              <input
+                type="number"
+                value={painInTheAssCharge || ''}
+                onChange={(e) => onPainInTheAssChargeChange(parseFloat(e.target.value) || 0)}
+                className="w-full pl-8 pr-4 py-3 text-xl font-bold text-neutral-800 bg-neutral-50 border-2 border-neutral-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                placeholder="0.00"
+                step="50"
+                min="0"
+              />
+            </div>
+            <div className="flex gap-2 mt-3">
+              {[100, 250, 500, 1000].map((amount) => (
+                <button
+                  key={amount}
+                  onClick={() => onPainInTheAssChargeChange(amount)}
+                  className={`flex-1 py-2 px-3 text-sm font-semibold rounded-lg transition-all ${
+                    painInTheAssCharge === amount
+                      ? 'bg-orange-500 text-white shadow-md'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-orange-100 hover:text-orange-700'
+                  }`}
                 >
-                  <option value="no">No</option>
-                  <option value="yes">Yes (+$250)</option>
-                </select>
-              </div>
+                  +${amount}
+                </button>
+              ))}
             </div>
           </div>
         </div>
-      ) : (
-        <div className="text-center py-8 text-gray-500">
-          <Calculator className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>Select job types above to see pricing estimates</p>
+
+        {/* Permit Card */}
+        <div className="bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
+          <div className="px-5 py-4 bg-gradient-to-r from-indigo-500 to-purple-500">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <FileText className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Building Permit</h3>
+                <p className="text-indigo-100 text-xs">Required for structural work</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-5">
+            <div className="flex gap-3">
+              <button
+                onClick={() => onPermitRequiredChange(false)}
+                className={`flex-1 py-4 px-4 rounded-xl font-semibold transition-all ${
+                  !permitRequired
+                    ? 'bg-neutral-800 text-white shadow-lg'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                }`}
+              >
+                <span className="block text-lg">No Permit</span>
+                <span className="block text-sm opacity-70">$0</span>
+              </button>
+              <button
+                onClick={() => onPermitRequiredChange(true)}
+                className={`flex-1 py-4 px-4 rounded-xl font-semibold transition-all ${
+                  permitRequired
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-indigo-100 hover:text-indigo-700'
+                }`}
+              >
+                <span className="block text-lg">Permit Required</span>
+                <span className="block text-sm opacity-70">+$250</span>
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Crew Info Banner */}
+      <div className={`bg-gradient-to-r ${
+        crewInfo.color === 'emerald' ? 'from-emerald-500 to-green-500' :
+        crewInfo.color === 'blue' ? 'from-blue-500 to-cyan-500' :
+        crewInfo.color === 'purple' ? 'from-purple-500 to-pink-500' :
+        'from-neutral-400 to-neutral-500'
+      } rounded-xl p-4 shadow-md`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Users className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-white/80 text-xs font-medium uppercase tracking-wide">Assigned Crew</p>
+              <p className="text-white font-bold text-lg">{crewInfo.name}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-white/80 text-xs font-medium">Hourly Rate</p>
+            <p className="text-white font-bold text-2xl">${crewInfo.rate}/hr</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed Breakdown Accordion */}
+      <div className="bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
+        <button
+          onClick={() => setShowDetailedPricing(!showDetailedPricing)}
+          className="w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-neutral-50 to-white hover:from-neutral-100 hover:to-neutral-50 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Calculator className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="font-bold text-neutral-800">Detailed Cost Breakdown</span>
+          </div>
+          <div className={`p-1 rounded-lg bg-neutral-100 transition-transform duration-300 ${showDetailedPricing ? 'rotate-180' : ''}`}>
+            <ChevronDown className="w-5 h-5 text-neutral-600" />
+          </div>
+        </button>
+
+        {showDetailedPricing && (
+          <div className="border-t border-neutral-100 divide-y divide-neutral-100 animate-fade-in">
+            {/* Materials Section */}
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Package className="w-5 h-5 text-blue-600" />
+                </div>
+                <h4 className="font-bold text-neutral-800 text-lg">Materials</h4>
+                <span className="ml-auto text-2xl font-bold text-blue-600">
+                  ${formatCurrency(calculateMaterialsTotal())}
+                </span>
+              </div>
+
+              {getMaterialsBreakdown().length > 0 ? (
+                <div className="space-y-2">
+                  {getMaterialsBreakdown().map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg">
+                      <div>
+                        <p className="font-semibold text-neutral-800">{item.name}</p>
+                        <p className="text-sm text-neutral-500">{item.quantity} {item.unit}</p>
+                      </div>
+                      <span className="font-bold text-blue-600">${formatCurrency(item.cost)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-neutral-500 text-sm italic py-4">No calculated materials - using manual entries only</p>
+              )}
+
+              {getTotalMaterialCosts() > 0 && (
+                <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-600" />
+                      <span className="font-semibold text-amber-800">Manual Material Entries</span>
+                    </div>
+                    <span className="font-bold text-amber-600">${formatCurrency(getTotalMaterialCosts())}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Labor Section */}
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Wrench className="w-5 h-5 text-purple-600" />
+                </div>
+                <h4 className="font-bold text-neutral-800 text-lg">Labor</h4>
+                <span className="ml-auto text-2xl font-bold text-purple-600">
+                  ${formatCurrency(calculateLaborTotal())}
+                </span>
+              </div>
+
+              {getLaborBreakdown().length > 0 ? (
+                <div className="space-y-2">
+                  {getLaborBreakdown().map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-3 px-4 bg-purple-50 rounded-lg">
+                      <div>
+                        <p className="font-semibold text-neutral-800">{item.name}</p>
+                        <p className="text-sm text-neutral-500">{item.hours} hrs @ ${item.rate}/hr</p>
+                      </div>
+                      <span className="font-bold text-purple-600">${formatCurrency(item.cost)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-neutral-500 text-sm italic py-4">No calculated labor - using manual entries only</p>
+              )}
+
+              {getTotalLaborHours() > 0 && (
+                <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-amber-600" />
+                      <div>
+                        <span className="font-semibold text-amber-800">Manual Labor Hours</span>
+                        <span className="text-sm text-amber-600 ml-2">
+                          {getTotalLaborHours().toFixed(1)} hrs @ ${getHourlyRate()}/hr
+                        </span>
+                      </div>
+                    </div>
+                    <span className="font-bold text-amber-600">
+                      ${formatCurrency(getTotalLaborHours() * getHourlyRate())}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Summary Section */}
+            <div className="p-6 bg-gradient-to-b from-neutral-50 to-white">
+              <h4 className="font-bold text-neutral-800 text-lg mb-4">Final Summary</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between py-2">
+                  <span className="text-neutral-600">Materials Subtotal</span>
+                  <span className="font-semibold text-neutral-800">${formatCurrency(calculateMaterialsTotal())}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-neutral-600">Labor Subtotal</span>
+                  <span className="font-semibold text-neutral-800">${formatCurrency(calculateLaborTotal())}</span>
+                </div>
+                <div className="h-px bg-neutral-200 my-2"></div>
+                <div className="flex justify-between py-2">
+                  <span className="text-neutral-600">Subtotal</span>
+                  <span className="font-semibold text-neutral-800">
+                    ${formatCurrency(calculateMaterialsTotal() + calculateLaborTotal())}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-neutral-600">Overhead (10%)</span>
+                  <span className="font-semibold text-amber-600">${formatCurrency(calculateOverhead())}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-neutral-600">Profit (20%)</span>
+                  <span className="font-semibold text-emerald-600">${formatCurrency(calculateProfit())}</span>
+                </div>
+                {permitRequired && (
+                  <div className="flex justify-between py-2">
+                    <span className="text-neutral-600">Permit Fee</span>
+                    <span className="font-semibold text-indigo-600">$250.00</span>
+                  </div>
+                )}
+                {painInTheAssCharge > 0 && (
+                  <div className="flex justify-between py-2">
+                    <span className="text-neutral-600">Complexity Charge</span>
+                    <span className="font-semibold text-orange-600">${formatCurrency(painInTheAssCharge)}</span>
+                  </div>
+                )}
+                <div className="h-px bg-neutral-300 my-2"></div>
+                <div className="flex justify-between py-3 bg-emerald-100 rounded-xl px-4 -mx-4">
+                  <span className="font-bold text-emerald-800 text-xl">Total Estimate</span>
+                  <span className="font-black text-emerald-600 text-2xl">${formatCurrency(calculateEstimatedTotal())}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Disclaimer */}
+            <div className="p-4 bg-amber-50 border-t border-amber-200">
+              <div className="flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  <strong>Note:</strong> This is an automated estimate based on the information provided.
+                  Final pricing may vary based on site conditions, material availability, and additional
+                  requirements discovered during the project.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

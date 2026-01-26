@@ -2892,159 +2892,255 @@ const saveJobToFirestore = async (jobRecord: any) => {
 // Email export function 
 // Helper function to generate estimate body (reused for email and preview)
 const generateEstimateBody = (jobRecord: any) => {
-  // Helper function to extract current condition data
-  const getCurrentConditions = () => {
+  // Helper to format a value for display
+  const formatValue = (value: any): string => {
+    if (value === null || value === undefined || value === '') return 'Not specified';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (Array.isArray(value)) {
+      if (value.length === 0) return 'None';
+      // Check if it's an array of dimension objects
+      if (value[0] && typeof value[0] === 'object' && ('length' in value[0] || 'width' in value[0])) {
+        return value.map((dim: any, i: number) =>
+          `Section ${i + 1}: ${dim.length || 0}' × ${dim.width || 0}' = ${((dim.length || 0) * (dim.width || 0)).toFixed(0)} sq ft`
+        ).join('\n         ');
+      }
+      return value.join(', ');
+    }
+    if (typeof value === 'object') {
+      // Handle condition assessment
+      if ('condition' in value) {
+        let str = `${value.condition}`;
+        if (value.notes) str += ` - Notes: ${value.notes}`;
+        if (value.measurements) str += ` - Measurements: ${value.measurements}`;
+        return str;
+      }
+      // Handle repair recommendation
+      if ('description' in value) {
+        let str = value.description || '';
+        if (value.priority) str += ` (Priority: ${value.priority})`;
+        if (value.cost_estimate) str += ` - Est Cost: $${value.cost_estimate}`;
+        return str;
+      }
+      // Handle grid measurements or other objects
+      return JSON.stringify(value, null, 2);
+    }
+    return String(value);
+  };
+
+  // Helper to make question keys readable
+  const formatQuestionKey = (key: string): string => {
+    // Remove job type prefix
+    let formatted = key.replace(/^[^_]+_/, '');
+    // Replace underscores with spaces and capitalize
+    formatted = formatted.replace(/_/g, ' ');
+    // Capitalize first letter of each word
+    formatted = formatted.replace(/\b\w/g, l => l.toUpperCase());
+    return formatted;
+  };
+
+  // Group job-specific answers by job type
+  const getJobSpecificData = () => {
+    const jobTypes: { [key: string]: { [key: string]: any } } = {};
+
+    jobRecord.jobTypes.forEach((jobType: string) => {
+      jobTypes[jobType] = {};
+    });
+
+    Object.entries(jobRecord.jobSpecificAnswers).forEach(([key, value]) => {
+      if (!value && value !== 0 && value !== false) return; // Skip empty values
+
+      // Find which job type this answer belongs to
+      const matchedJobType = jobRecord.jobTypes.find((jt: string) => key.startsWith(jt + '_'));
+      if (matchedJobType) {
+        const fieldKey = key.replace(matchedJobType + '_', '');
+        jobTypes[matchedJobType][fieldKey] = value;
+      } else {
+        // General answer not tied to specific job type
+        if (!jobTypes['General']) jobTypes['General'] = {};
+        jobTypes['General'][key] = value;
+      }
+    });
+
+    return jobTypes;
+  };
+
+  // Format job-specific sections
+  const formatJobSection = (jobType: string, answers: { [key: string]: any }) => {
+    if (Object.keys(answers).length === 0) return '';
+
+    // Categorize answers
+    const dimensions: string[] = [];
+    const materials: string[] = [];
     const conditions: string[] = [];
-    Object.entries(jobRecord.jobSpecificAnswers).forEach(([key, value]) => {
-      if (key.includes('current_') && value) {
-        const jobType = key.split('_current_')[0];
-        const field = key.split('_current_')[1];
-        if (typeof value === 'object' && value !== null && 'condition' in value) {
-          const conditionObj = value as { condition: string; notes?: string };
-          conditions.push(`${jobType} - ${field}: ${conditionObj.condition} (${conditionObj.notes || 'No notes'})`);
-        } else {
-          conditions.push(`${jobType} - ${field}: ${JSON.stringify(value)}`);
-        }
-      }
-    });
-    return conditions;
-  };
-
-  // Helper function to extract recommended repairs data
-  const getRecommendedRepairs = () => {
     const repairs: string[] = [];
-    Object.entries(jobRecord.jobSpecificAnswers).forEach(([key, value]) => {
-      if (key.includes('recommended_') && value) {
-        const jobType = key.split('_recommended_')[0];
-        const field = key.split('_recommended_')[1];
-        if (typeof value === 'object' && value !== null && 'description' in value) {
-          const repairObj = value as { description: string; priority?: string };
-          repairs.push(`${jobType} - ${field}: ${repairObj.description} (Priority: ${repairObj.priority || 'Not specified'})`);
-        } else {
-          repairs.push(`${jobType} - ${field}: ${JSON.stringify(value)}`);
-        }
+    const measurements: string[] = [];
+    const other: string[] = [];
+
+    Object.entries(answers).forEach(([key, value]) => {
+      const formattedKey = formatQuestionKey(key);
+      const formattedValue = formatValue(value);
+
+      const line = `${formattedKey}: ${formattedValue}`;
+
+      // Categorize based on key patterns
+      if (key.includes('dimension') || key.includes('length') || key.includes('width') || key.includes('height') || key.includes('area') || key.includes('sqft') || key.includes('sq_ft')) {
+        dimensions.push(line);
+      } else if (key.includes('material') || key.includes('decking') || key.includes('railing_type') || key.includes('finish') || key.includes('stain') || key.includes('paint') || key.includes('color')) {
+        materials.push(line);
+      } else if (key.includes('current_') || key.includes('condition') || key.includes('existing')) {
+        conditions.push(line);
+      } else if (key.includes('recommended_') || key.includes('repair') || key.includes('replace')) {
+        repairs.push(line);
+      } else if (key.includes('linear') || key.includes('count') || key.includes('number') || key.includes('total') || key.includes('qty')) {
+        measurements.push(line);
+      } else {
+        other.push(line);
       }
     });
-    return repairs;
+
+    let section = `\n📋 ${jobType.toUpperCase()}\n${'━'.repeat(65)}\n`;
+
+    if (dimensions.length > 0) {
+      section += `\n   📐 DIMENSIONS & AREAS:\n`;
+      dimensions.forEach(d => section += `      • ${d}\n`);
+    }
+    if (measurements.length > 0) {
+      section += `\n   📏 MEASUREMENTS & QUANTITIES:\n`;
+      measurements.forEach(m => section += `      • ${m}\n`);
+    }
+    if (materials.length > 0) {
+      section += `\n   🪵 MATERIALS & FINISHES:\n`;
+      materials.forEach(m => section += `      • ${m}\n`);
+    }
+    if (conditions.length > 0) {
+      section += `\n   🔍 CURRENT CONDITIONS:\n`;
+      conditions.forEach(c => section += `      • ${c}\n`);
+    }
+    if (repairs.length > 0) {
+      section += `\n   🔧 RECOMMENDED REPAIRS:\n`;
+      repairs.forEach(r => section += `      • ${r}\n`);
+    }
+    if (other.length > 0) {
+      section += `\n   📝 ADDITIONAL DETAILS:\n`;
+      other.forEach(o => section += `      • ${o}\n`);
+    }
+
+    return section;
   };
 
-  // Helper function to extract addons
-  const getAddons = () => {
-    const addons: string[] = [];
-    Object.entries(jobRecord.jobSpecificAnswers).forEach(([key, value]) => {
-      if (key.includes('_addons') && value && Array.isArray(value)) {
-        const jobType = key.split('_addons')[0];
-        value.forEach((addon: string) => {
-          addons.push(`${jobType}: ${addon}`);
-        });
-      } else if (key.includes('deck_addons') && value && Array.isArray(value)) {
-        value.forEach((addon: string) => {
-          addons.push(addon);
+  // Get all calculations in readable format
+  const getCalculationsSummary = () => {
+    if (!jobRecord.calculations || Object.keys(jobRecord.calculations).length === 0) return '';
+
+    let summary = '\n📊 CALCULATED MATERIALS & QUANTITIES\n' + '━'.repeat(65) + '\n';
+
+    Object.entries(jobRecord.calculations).forEach(([key, calc]: [string, any]) => {
+      const jobType = key.replace(/_materials|_calculations|_labor/g, '').toUpperCase();
+      summary += `\n   ${jobType}:\n`;
+
+      if (typeof calc === 'object' && calc !== null) {
+        Object.entries(calc).forEach(([calcKey, calcValue]) => {
+          if (calcValue && calcValue !== 0) {
+            const formattedKey = formatQuestionKey(calcKey);
+            summary += `      • ${formattedKey}: ${formatValue(calcValue)}\n`;
+          }
         });
       }
     });
-    return addons;
+
+    return summary;
   };
+
+  const jobSpecificData = getJobSpecificData();
 
   // Create formatted estimate body
   return `
-═══════════════════════════════════════════════════════════════
-                    DECK DOCTOR ESTIMATE
-═══════════════════════════════════════════════════════════════
+${'═'.repeat(65)}
+                    DECK DOCTOR FIELD ESTIMATE
+${'═'.repeat(65)}
 
 📋 CUSTOMER INFORMATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Customer Name:      ${jobRecord.customerName}
+${'━'.repeat(65)}
+   Customer Name:      ${jobRecord.customerName || 'Not provided'}
    Phone:              ${jobRecord.customerPhone || 'Not provided'}
    Email:              ${jobRecord.customerEmail || 'Not provided'}
    Customer Address:   ${jobRecord.customerAddress || 'Not provided'}
    Project Address:    ${jobRecord.projectAddress || 'Same as customer address'}
    Customer Grade:     ${jobRecord.customerGrade || 'Not rated'}
-   Customer Type:      ${jobRecord.newCustomer ? 'New Customer' : 'Returning Customer'}
-   ${jobRecord.newCustomer && jobRecord.referralSource ? `Referral Source:    ${jobRecord.referralSource}` : ''}
-   ${jobRecord.hasReferrals ? `Has Referrals:      YES ($250 program mentioned)` : ''}
-   ${jobRecord.hasReferrals && jobRecord.referralInfo ? `Referral Info:      ${jobRecord.referralInfo.replace(/\n/g, '\n                       ')}` : ''}
+   Customer Type:      ${jobRecord.newCustomer ? 'NEW CUSTOMER' : 'Returning Customer'}
+${jobRecord.newCustomer && jobRecord.referralSource ? `   Referral Source:    ${jobRecord.referralSource}` : ''}
+${jobRecord.hasReferrals ? `   Has Referrals:      YES ($250 referral program mentioned)` : ''}
+${jobRecord.hasReferrals && jobRecord.referralInfo ? `   Referral Details:   ${jobRecord.referralInfo.replace(/\n/g, '\n                       ')}` : ''}
    Samples Needed:     ${jobRecord.needsSamples ? 'YES' : 'NO'}
-   ${jobRecord.needsSamples && jobRecord.sampleTypes ? `Sample Types:       ${jobRecord.sampleTypes.replace(/\n/g, '\n                       ')}` : ''}
-   ${jobRecord.gateCode ? `Gate/Door Code:     ${jobRecord.gateCode}` : ''}
-   ${jobRecord.paintStainColors ? `Paint/Stain Colors: ${jobRecord.paintStainColors}${(() => {
-     const refinishingJob = jobRecord.jobTypes.find((jt: string) => jt.includes("Refinishing"));
-     if (refinishingJob) {
-       const isColorChange = jobRecord.jobSpecificAnswers[`${refinishingJob}_is_color_change`];
-       const currentColor = jobRecord.jobSpecificAnswers[`${refinishingJob}_current_stain_paint_color`];
-       return isColorChange ? `\n   ⚠️  COLOR CHANGE: From "${currentColor}" to "${jobRecord.paintStainColors}"\n   📈 IMPORTANT: Color change significantly increases labor costs (extra prep, primer, coats)` : '';
-     }
-     return '';
-   })()}` : ''}
-   ${jobRecord.scheduleRequirements ? `Timeline/Schedule:  ${jobRecord.scheduleRequirements}` : ''}
+${jobRecord.needsSamples && jobRecord.sampleTypes ? `   Sample Types:       ${jobRecord.sampleTypes.replace(/\n/g, '\n                       ')}` : ''}
+${jobRecord.gateCode ? `   Gate/Door Code:     ${jobRecord.gateCode}` : ''}
+${jobRecord.paintStainColors ? `   Paint/Stain Colors: ${jobRecord.paintStainColors}` : ''}
+${jobRecord.scheduleRequirements ? `   Timeline/Schedule:  ${jobRecord.scheduleRequirements}` : ''}
 
-💼 PROJECT DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💼 PROJECT OVERVIEW
+${'━'.repeat(65)}
    Project Types:      ${jobRecord.jobTypes.join(', ')}
-   Estimator:          ${jobRecord.estimatorName}
-   Visit Date:         ${jobRecord.visitDate}
-   Budget:             $${jobRecord.projectValue.toLocaleString()}
+   Estimator:          ${jobRecord.estimatorName || 'Not specified'}
+   Visit Date:         ${jobRecord.visitDate || 'Not specified'}
+   Budget Range:       $${(jobRecord.projectValue || 0).toLocaleString()}
    Permit Required:    ${jobRecord.permitRequired ? 'YES' : 'NO'}
-   ${jobRecord.painInTheAssCharge > 0 ? `PITA Charge:        $${jobRecord.painInTheAssCharge.toLocaleString()} (Unusual difficulty/complexity)` : ''}
+${jobRecord.painInTheAssCharge > 0 ? `   Difficulty Charge:  $${jobRecord.painInTheAssCharge.toLocaleString()} (complexity factor)` : ''}
 
-📍 LOCATION & CODES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   GPS Coordinates:    ${jobRecord.gpsLat.toFixed(6)}, ${jobRecord.gpsLng.toFixed(6)}
-   City Code:          ${jobRecord.cityCode || 'Not specified'}
-   Live Load:          ${jobRecord.liveLoad ? jobRecord.liveLoad + ' psf' : 'Not specified'}
-   Snow Load:          ${jobRecord.snowLoad ? jobRecord.snowLoad + ' psf' : 'Not specified'}
+📍 LOCATION & BUILDING CODES
+${'━'.repeat(65)}
+   GPS Coordinates:    ${jobRecord.gpsLat?.toFixed(6) || 'N/A'}, ${jobRecord.gpsLng?.toFixed(6) || 'N/A'}
+   City/County Code:   ${jobRecord.cityCode || 'Not specified'}
+   Live Load:          ${jobRecord.liveLoad ? jobRecord.liveLoad + ' psf' : 'Standard (40 psf)'}
+   Snow Load:          ${jobRecord.snowLoad ? jobRecord.snowLoad + ' psf' : 'Per local code'}
 
-${getCurrentConditions().length > 0 ? `
-🔍 CURRENT CONDITIONS ASSESSMENT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${getCurrentConditions().map(c => `   • ${c}`).join('\n')}
-` : ''}
+${'═'.repeat(65)}
+                    JOB-SPECIFIC INFORMATION
+${'═'.repeat(65)}
+${Object.entries(jobSpecificData)
+  .filter(([jobType, answers]) => Object.keys(answers).length > 0)
+  .map(([jobType, answers]) => formatJobSection(jobType, answers))
+  .join('\n')}
 
-${getRecommendedRepairs().length > 0 ? `
-🔧 RECOMMENDED REPAIRS & CHANGES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${getRecommendedRepairs().map(r => `   • ${r}`).join('\n')}
-` : ''}
-
-${getAddons().length > 0 ? `
-✨ SPECIAL ADD-ONS & FEATURES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${getAddons().map(a => `   • ${a}`).join('\n')}
-` : ''}
+${getCalculationsSummary()}
 
 ${jobRecord.generalNotes ? `
-📝 GENERAL NOTES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 GENERAL NOTES FROM SITE VISIT
+${'━'.repeat(65)}
 ${jobRecord.generalNotes.split('\n').map((line: string) => `   ${line}`).join('\n')}
 ` : ''}
 
 ${jobRecord.measurementNotes ? `
-📐 MEASUREMENT NOTES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📐 DETAILED MEASUREMENT NOTES
+${'━'.repeat(65)}
 ${jobRecord.measurementNotes.split('\n').map((line: string) => `   ${line}`).join('\n')}
 ` : ''}
 
 ${jobRecord.estimatorNotes ? `
-✅ ESTIMATOR FOLLOW-UP
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ ESTIMATOR FOLLOW-UP & ACTION ITEMS
+${'━'.repeat(65)}
 ${jobRecord.estimatorNotes.split('\n').map((line: string) => `   ${line}`).join('\n')}
 ` : ''}
 
-${Object.entries(jobRecord.calculations).filter(([key]) => key.includes('materials')).length > 0 ? `
-📦 MATERIALS SUMMARY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${Object.entries(jobRecord.calculations)
-  .filter(([key]) => key.includes('materials'))
-  .map(([key, materials]) => {
-    const jobType = key.replace('_materials', '');
-    return `\n   ${jobType.toUpperCase()}:\n   ${'-'.repeat(60)}\n${JSON.stringify(materials, null, 2).split('\n').map(line => `   ${line}`).join('\n')}`;
-  }).join('\n\n')}
+${jobRecord.files && jobRecord.files.length > 0 ? `
+📸 ATTACHED FILES (${jobRecord.files.length})
+${'━'.repeat(65)}
+${jobRecord.files.map((f: any, i: number) => `   ${i + 1}. ${f.name || f.fileName || 'File ' + (i + 1)}`).join('\n')}
 ` : ''}
 
-═══════════════════════════════════════════════════════════════
-                Generated with Deck Doctor Estimator v3.0.0
-                      ${new Date().toLocaleDateString()}
-═══════════════════════════════════════════════════════════════
+${'═'.repeat(65)}
+              OFFICE USE - ESTIMATE PREPARATION
+${'═'.repeat(65)}
+
+   Document ID:        ${jobRecord.id || 'Pending save'}
+   Created:            ${new Date().toLocaleString()}
+   App Version:        Deck Doctor Estimator v3.0.0
+
+   Status:             [ ] Review Complete
+                       [ ] Pricing Added
+                       [ ] Proposal Sent
+                       [ ] Customer Follow-up
+
+${'═'.repeat(65)}
 `;
 };
 
