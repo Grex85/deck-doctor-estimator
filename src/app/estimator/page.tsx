@@ -1,4 +1,4 @@
-import EstimatorTabs from '@/components/EstimatorTabs';
+import EstimatorTabs from '@/components/EstimatorForms';
 
 export default function EstimatorPage() {
   return <EstimatorTabs />;
