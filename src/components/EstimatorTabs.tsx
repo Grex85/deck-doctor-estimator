@@ -1075,6 +1075,7 @@ export default function EstimatorTabs() {
         { id: "deck_sections", question: "Number of deck sections/levels", type: "number", required: true, category: "Basic Measurements", perStructure: true },
         { id: "main_deck_dimensions", question: "Deck area dimensions", type: "multiple-dimensions", required: true, category: "Basic Measurements", perStructure: true },
         { id: "ground_level_deck", question: "Is this a ground level deck?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Basic Measurements", perStructure: true },
+        { id: "deck_height_from_ground", question: "Distance from ground to deck surface", type: "number", unit: "inches", required: true, category: "Basic Measurements", dependency: "ground_level_deck", dependencyValue: "No", perStructure: true, placeholder: "Enter height in inches" },
         { id: "deck_has_stairs", question: "Does this deck have stairs?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Basic Measurements", perStructure: true },
 
         // (Frame & columns and decking questions come from newBuildQuestions for New Build)
@@ -1093,7 +1094,8 @@ export default function EstimatorTabs() {
         { id: "total_stair_railing_linear_ft", question: "Total stair railing", type: "number", unit: "linear ft", category: "Railing Measurements", dependency: "stairs_have_railings", dependencyValue: true, perStructure: true },
 
         // ===== STAIRS =====
-        { id: "calculated_number_of_steps", question: "Calculated number of steps", type: "calculation-display", category: "Stairs", calculation: "steps-from-railing", perStructure: true },
+        { id: "stair_calculation", question: "Automatic Stair & Railing Calculation", type: "calculation-display", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "number_of_steps", question: "Number of steps (auto-calculated from deck height)", type: "number", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stair_tread_material", question: "What material are the stair treads?", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Redwood", "Hardwood", "Composite", "Same as deck"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "stair_tread_boards", question: "Stair treads: one board or two?", type: "select", options: ["One board", "Two boards"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stairs_enclosed_or_open", question: "Are stairs enclosed or open?", type: "select", options: ["Enclosed", "Open"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
@@ -1266,15 +1268,6 @@ export default function EstimatorTabs() {
             required: true,
             category: "Beam Configuration",
             allowOther: true,
-            perStructure: true,
-          },
-          {
-            id: "beam_type",
-            question: "Beam mounting type",
-            type: "radio",
-            options: ["Raised beam", "Dropped beam"],
-            required: true,
-            category: "Beam Configuration",
             perStructure: true,
           },
           {
@@ -2285,8 +2278,8 @@ const getPermitRequirements = (): string[] | null => {
   const requirements: string[] = [];
   jobData.jobTypes.forEach((jobType) => {
     if (jobType.includes("Decks")) {
-      const height = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height`] || "0");
-      if (height > 2.5) requirements.push("Any attached Deck Higher than 30\" requires a building permit and railings");
+      const heightInches = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+      if (heightInches > 30) requirements.push("Any attached Deck Higher than 30\" requires a building permit and railings");
     }
     
     if (jobType.includes("Retaining Walls")) {
@@ -3537,10 +3530,11 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
           );
         } else if (question.id === "railing_code_warning") {
           // Railing code warning function moved inside component to access jobData
-          const deckHeight = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height`] || "0");
+          const deckHeightInches = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          const deckHeightFeet = deckHeightInches / 12;
           const railingNeeded = jobData.jobSpecificAnswers[`${jobType}_railing_needed`];
 
-          if (deckHeight > 2.5 && !railingNeeded) {
+          if (deckHeightInches > 30 && !railingNeeded) {
             return (
               <div className="p-4 bg-red-100 border-2 border-red-400 rounded-md">
                 <div className="flex items-center mb-2">
@@ -3548,43 +3542,58 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
                   <span className="font-bold text-red-800">CODE VIOLATION WARNING</span>
                 </div>
                 <div className="text-red-700 font-medium">
-                  <p>⚠️ Deck height is {deckHeight} feet - RAILINGS ARE REQUIRED BY CODE</p>
-                  <p>Colorado building code requires railings on decks over 30 inches (2.5 feet) high.</p>
+                  <p>⚠️ Deck height is {deckHeightInches}" ({deckHeightFeet.toFixed(1)} feet) - RAILINGS ARE REQUIRED BY CODE</p>
+                  <p>Colorado building code requires railings on decks over 30 inches high.</p>
                   <p className="mt-2 font-bold">Please check "Will this deck have railings?" above.</p>
                 </div>
               </div>
             );
-          } else if (deckHeight > 2.5 && railingNeeded) {
+          } else if (deckHeightInches > 30 && railingNeeded) {
             return (
               <div className="p-4 bg-green-100 border-2 border-green-400 rounded-md">
                 <div className="flex items-center mb-2">
                   <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
                   <span className="font-bold text-green-800">CODE COMPLIANT</span>
                 </div>
-                <p className="text-green-700 font-medium">✅ Deck height {deckHeight} feet with railings - meets Colorado building code requirements.</p>
+                <p className="text-green-700 font-medium">✅ Deck height {deckHeightInches}" ({deckHeightFeet.toFixed(1)} feet) with railings - meets Colorado building code requirements.</p>
               </div>
             );
-          } else if (deckHeight <= 2.5) {
+          } else if (deckHeightInches <= 30 && deckHeightInches > 0) {
             return (
               <div className="p-4 bg-blue-100 border-2 border-blue-400 rounded-md">
                 <div className="flex items-center mb-2">
                   <Calculator className="w-5 h-5 text-blue-600 mr-2" />
                   <span className="font-bold text-blue-800">CODE INFORMATION</span>
                 </div>
-                <p className="text-blue-700 font-medium">ℹ️ Deck height {deckHeight} feet - railings optional (under 30" threshold).</p>
+                <p className="text-blue-700 font-medium">ℹ️ Deck height {deckHeightInches}" ({deckHeightFeet.toFixed(1)} feet) - railings optional (under 30" threshold).</p>
               </div>
             );
           }
           return null;
         } else if (question.id === "stair_calculation") {
-          const deckHeight = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height`] || "0");
-          const stairDesign = jobData.jobSpecificAnswers[`${jobType}_stair_design`];
-          
-          if (deckHeight > 0) {
-            // Calculate based on 2 treads per foot (6 inches per tread)
-            const estimatedTreads = Math.ceil(deckHeight * 2);
-            const riserHeight = (deckHeight * 12) / estimatedTreads; // Convert to inches
-            
+          const deckHeightInches = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          const deckHeightFeet = deckHeightInches / 12;
+          const hasStairs = jobData.jobSpecificAnswers[`${jobType}_deck_has_stairs`];
+          const stairRailingSides = jobData.jobSpecificAnswers[`${jobType}_stair_railing_sides`];
+
+          if (deckHeightInches > 0 && (hasStairs === true || (Array.isArray(hasStairs) && hasStairs.includes("Yes")))) {
+            // Calculate based on ideal riser height of 7.5 inches (code compliant range is 4"-7.75")
+            const idealRiserHeight = 7.5;
+            const estimatedTreads = Math.ceil(deckHeightInches / idealRiserHeight);
+            const actualRiserHeight = deckHeightInches / estimatedTreads;
+
+            // Calculate stair run: standard tread depth is 10-11 inches
+            const treadDepth = 10.5; // inches
+            const totalRun = estimatedTreads * treadDepth; // Total horizontal run in inches
+            const totalRunFeet = totalRun / 12;
+
+            // Calculate stair railing length using Pythagorean theorem (hypotenuse)
+            const stairRailingLength = Math.sqrt(Math.pow(deckHeightInches, 2) + Math.pow(totalRun, 2)) / 12; // Convert to feet
+
+            // Determine if one or both sides
+            const railingSideMultiplier = stairRailingSides === "Both sides" ? 2 : 1;
+            const totalStairRailing = Math.ceil(stairRailingLength * railingSideMultiplier);
+
             // Auto-populate the number of steps
             const currentSteps = jobData.jobSpecificAnswers[`${jobType}_number_of_steps`];
             if (!currentSteps || currentSteps !== estimatedTreads) {
@@ -3592,25 +3601,48 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
                 handleJobAnswer(jobType, 'number_of_steps', estimatedTreads);
               }, 100);
             }
-            
+
+            // Auto-populate the stair railing linear feet
+            const currentStairRailing = jobData.jobSpecificAnswers[`${jobType}_total_stair_railing_linear_ft`];
+            if (!currentStairRailing || currentStairRailing !== totalStairRailing) {
+              setTimeout(() => {
+                handleJobAnswer(jobType, 'total_stair_railing_linear_ft', totalStairRailing);
+              }, 150);
+            }
+
             return (
-              <div className="p-4 bg-white rounded-lg border-2 border-green-600">
-                <h4 className="font-bold text-gray-900 mb-3 text-base">Automatic Stair Calculation</h4>
-                <div className="space-y-2 text-sm text-gray-900">
-                  <p><strong className="text-gray-900">Deck Height:</strong> {deckHeight} feet ({(deckHeight * 12).toFixed(1)} inches)</p>
-                  <p><strong className="text-gray-900">Calculated Treads:</strong> {estimatedTreads} steps</p>
-                  <p><strong className="text-gray-900">Riser Height:</strong> {riserHeight.toFixed(1)} inches per step</p>
-                  <p className="text-gray-700 text-xs mt-2">
-                    <strong className="text-gray-900">Note:</strong> Calculation based on 2 treads per foot (6" per tread standard).
-                    {stairDesign && <span> Design: {stairDesign}</span>}
-                  </p>
+              <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-600">
+                <h4 className="font-bold text-gray-900 mb-3 text-base flex items-center">
+                  <Calculator className="w-5 h-5 mr-2 text-green-600" />
+                  Automatic Stair & Railing Calculation
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <p><strong className="text-gray-900">Deck Height:</strong> {deckHeightInches}" ({deckHeightFeet.toFixed(1)} ft)</p>
+                    <p><strong className="text-gray-900">Number of Treads:</strong> <span className="text-green-700 font-bold">{estimatedTreads} steps</span></p>
+                    <p><strong className="text-gray-900">Riser Height:</strong> {actualRiserHeight.toFixed(2)}" per step</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p><strong className="text-gray-900">Tread Depth:</strong> {treadDepth}" (standard)</p>
+                    <p><strong className="text-gray-900">Total Stair Run:</strong> {totalRunFeet.toFixed(1)} ft</p>
+                    <p><strong className="text-gray-900">Stair Railing:</strong> <span className="text-blue-700 font-bold">{totalStairRailing} linear ft</span> {stairRailingSides === "Both sides" ? "(both sides)" : "(one side)"}</p>
+                  </div>
                 </div>
+                <p className="text-gray-600 text-xs mt-3 border-t pt-2">
+                  <strong>Note:</strong> Based on 7.5" ideal riser height and 10.5" tread depth. Railing calculated using stair angle. Values auto-populated above.
+                </p>
+              </div>
+            );
+          } else if (deckHeightInches > 0) {
+            return (
+              <div className="p-4 bg-gray-100 rounded-lg">
+                <p className="text-gray-600 text-sm">Deck height: {deckHeightInches}" - No stairs indicated. Select "Yes" for "Does this deck have stairs?" to calculate stair requirements.</p>
               </div>
             );
           } else {
             return (
               <div className="p-4 bg-gray-100 rounded-lg">
-                <p className="text-gray-600 text-sm">Enter deck height above to see automatic stair calculation</p>
+                <p className="text-gray-600 text-sm">Enter deck height from ground above to see automatic stair and railing calculations.</p>
               </div>
             );
           }
