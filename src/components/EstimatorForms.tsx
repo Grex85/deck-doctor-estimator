@@ -1472,14 +1472,14 @@ export default function EstimatorTabs() {
             perStructure: true,
           },
 
-          // ===== RAILING QUESTIONS =====
+          // ===== RAILING QUESTIONS (New Build specific) =====
           {
             id: "railing_height",
             question: "Railing height",
             type: "select-with-other",
             options: ["36 inches (standard)", "42 inches (high deck)"],
             category: "Railings",
-            dependency: "railing_needed",
+            dependency: "does_deck_have_railings",
             dependencyValue: true,
             allowOther: true,
             perStructure: true,
@@ -1490,7 +1490,7 @@ export default function EstimatorTabs() {
             type: "select-with-other",
             options: ["Surface mount", "Side mount"],
             category: "Railings",
-            dependency: "railing_needed",
+            dependency: "does_deck_have_railings",
             dependencyValue: true,
             allowOther: true,
             perStructure: true,
@@ -3456,7 +3456,7 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
           // Railing code warning function moved inside component to access jobData
           const deckHeightInches = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
           const deckHeightFeet = deckHeightInches / 12;
-          const railingNeeded = jobData.jobSpecificAnswers[`${jobType}_railing_needed`];
+          const railingNeeded = jobData.jobSpecificAnswers[`${jobType}_does_deck_have_railings`];
 
           if (deckHeightInches > 30 && !railingNeeded) {
             return (
