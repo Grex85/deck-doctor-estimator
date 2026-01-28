@@ -1075,7 +1075,7 @@ export default function EstimatorTabs() {
         { id: "deck_sections", question: "Number of deck sections/levels", type: "number", required: true, category: "Basic Measurements", perStructure: true },
         { id: "main_deck_dimensions", question: "Deck area dimensions", type: "multiple-dimensions", required: true, category: "Basic Measurements", perStructure: true },
         { id: "ground_level_deck", question: "Is this a ground level deck?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Basic Measurements", perStructure: true },
-        { id: "deck_height_from_ground", question: "Distance from ground to deck surface", type: "number", unit: "inches", required: true, category: "Basic Measurements", dependency: "ground_level_deck", dependencyValue: "No", perStructure: true, placeholder: "Enter height in inches" },
+        { id: "deck_height_from_ground", question: "What is the deck height from the ground to the bottom of joists?", type: "number", unit: "inches", required: true, category: "Basic Measurements", dependency: "ground_level_deck", dependencyValue: false, perStructure: true, placeholder: "Enter height in inches" },
         { id: "deck_has_stairs", question: "Does this deck have stairs?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Basic Measurements", perStructure: true },
 
         // (Frame & columns and decking questions come from newBuildQuestions for New Build)
