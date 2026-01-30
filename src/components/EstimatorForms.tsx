@@ -107,6 +107,7 @@ interface JobQuestion {
     | "grid-measurement"
     | "calculation-display"
     | "material-list"
+    | "hardware-checklist"
     | "span-chart"
     | "checkbox-multiple"
     | "select-with-other"
@@ -1091,12 +1092,15 @@ export default function EstimatorTabs() {
         { id: "railing_composite_color", question: "Composite railing color", type: "select-with-other", options: ["White", "Black", "Gray", "Brown", "Tan", "Natural wood tone", "Dark espresso"], category: "Railings", dependency: "railing_material", dependencyValue: "Composite", allowOther: true, perStructure: true },
         { id: "railing_custom_description", question: "Custom railing description", type: "textarea", category: "Railings", dependency: "railing_material", dependencyValue: "Custom", perStructure: true },
         { id: "stairs_have_railings", question: "Do the stairs have railings?", type: "checkbox-multiple", options: ["Yes - one side", "Yes - both sides", "No"], category: "Railings", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "calculated_stair_railing_display", question: "Calculated Stair Railing Length", type: "calculation-display", category: "Railings", dependency: "stairs_have_railings", dependencyValue: true, perStructure: true },
         { id: "railing_height", question: "Railing height", type: "select-with-other", options: ["36 inches (standard)", "42 inches (high deck)"], category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "railing_attachment_method", question: "Railing attachment method", type: "select-with-other", options: ["Surface mount", "Side mount"], category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "total_level_railing_linear_ft", question: "Total level horizontal railing", type: "number", unit: "linear ft", category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, perStructure: true },
         // ===== STAIRS =====
         // Note: number_of_steps, stair_railing_linear_ft, and stringer_length are all auto-calculated from deck height
         { id: "stair_calculation", question: "Automatic Stair & Railing Calculation", type: "calculation-display", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "calculated_treads_display", question: "Number of Treads (calculated)", type: "calculation-display", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "calculated_stringer_length_display", question: "Stringer Length (calculated)", type: "calculation-display", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stair_tread_material", question: "What material are the stair treads?", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Redwood", "Hardwood", "Composite", "Same as deck"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "stair_tread_boards", question: "Stair treads: one board or two?", type: "select", options: ["One board", "Two boards"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stairs_enclosed_or_open", question: "Are stairs enclosed or open?", type: "select", options: ["Enclosed", "Open"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
@@ -1109,8 +1113,13 @@ export default function EstimatorTabs() {
         // ===== MISCELLANEOUS =====
         { id: "miscellaneous_areas", question: "Miscellaneous items that need attention", type: "add-sections", category: "Miscellaneous", placeholder: "e.g., skirting, fascia, posts, beams, verticals, etc.", perStructure: true },
 
+        // ===== HARDWARE =====
+        { id: "hardware_selection", question: "Hardware Selection", type: "hardware-checklist", category: "Hardware" },
+
         // ===== DOCUMENTATION =====
         { id: "photo_video_reminder", question: "Photo/Video Documentation Reminder", type: "calculation-display", category: "Documentation - Pictures and Videos" },
+
+        // ===== MATERIALS & PRICING =====
         { id: "materials_list", question: "Generated Materials List", type: "material-list", category: "Materials & Pricing" },
       ],
       
@@ -3666,19 +3675,239 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
               </div>
             </div>
           );
+        } else if (question.id === "calculated_stair_railing_display") {
+          const stairRailing = jobData.jobSpecificAnswers[`${jobType}_total_stair_railing_linear_ft`];
+          if (stairRailing) {
+            return (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-amber-800 font-medium">
+                  Stair Railing: <span className="text-xl font-bold">{stairRailing} linear ft</span>
+                </p>
+                <p className="text-amber-600 text-xs mt-1">Auto-calculated from deck height</p>
+              </div>
+            );
+          }
+          return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height to calculate stair railing</div>;
+        } else if (question.id === "calculated_treads_display") {
+          const numTreads = jobData.jobSpecificAnswers[`${jobType}_number_of_steps`];
+          if (numTreads) {
+            return (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-800 font-medium">
+                  Number of Treads: <span className="text-xl font-bold">{numTreads} steps</span>
+                </p>
+                <p className="text-green-600 text-xs mt-1">Auto-calculated from deck height (7.5" rise per step)</p>
+              </div>
+            );
+          }
+          return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height to calculate treads</div>;
+        } else if (question.id === "calculated_stringer_length_display") {
+          const stringerLength = jobData.jobSpecificAnswers[`${jobType}_stringer_length`];
+          if (stringerLength) {
+            return (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-800 font-medium">
+                  Stringer Length: <span className="text-xl font-bold">{stringerLength} ft</span> per stringer
+                </p>
+                <p className="text-blue-600 text-xs mt-1">Auto-calculated from deck height</p>
+              </div>
+            );
+          }
+          return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height to calculate stringer length</div>;
         }
         return null;
 
-      case "material-list":
-        // Simple text area for materials notes
+      case "hardware-checklist":
+        const hardwareItems = [
+          { id: "joist_hangers", name: "Joist Hangers", unit: "each" },
+          { id: "joist_hanger_nails", name: "Joist Hanger Nails (box)", unit: "boxes" },
+          { id: "post_bases", name: "Post Bases", unit: "each" },
+          { id: "post_caps", name: "Post Caps", unit: "each" },
+          { id: "carriage_bolts", name: "Carriage Bolts", unit: "each" },
+          { id: "lag_bolts", name: "Lag Bolts", unit: "each" },
+          { id: "structural_screws", name: "Structural Screws (box)", unit: "boxes" },
+          { id: "deck_screws", name: "Deck Screws (box)", unit: "boxes" },
+          { id: "hidden_fasteners", name: "Hidden Fastener Clips", unit: "boxes" },
+          { id: "flashing_tape", name: "Joist Flashing Tape (roll)", unit: "rolls" },
+          { id: "ledger_board_hardware", name: "Ledger Board Hardware Kit", unit: "kits" },
+          { id: "concrete_anchors", name: "Concrete Anchors", unit: "each" },
+          { id: "post_to_beam_brackets", name: "Post-to-Beam Brackets", unit: "each" },
+          { id: "angle_brackets", name: "Angle Brackets", unit: "each" },
+          { id: "hurricane_ties", name: "Hurricane Ties", unit: "each" },
+          { id: "stair_angles", name: "Stair Angles/Brackets", unit: "each" },
+        ];
+        const hardwareSelections = value || {};
         return (
-          <textarea
-            value={value || ""}
-            onChange={(e) => handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), e.target.value)}
-            className={baseInputClasses + " min-h-[150px]"}
-            placeholder="Enter materials list and notes..."
-          />
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {hardwareItems.map((item) => (
+                <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <input
+                    type="checkbox"
+                    id={`hw_${item.id}`}
+                    checked={hardwareSelections[item.id]?.selected || false}
+                    onChange={(e) => {
+                      const newSelections = { ...hardwareSelections };
+                      newSelections[item.id] = {
+                        ...newSelections[item.id],
+                        selected: e.target.checked,
+                        name: item.name,
+                        unit: item.unit
+                      };
+                      handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newSelections);
+                    }}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor={`hw_${item.id}`} className="flex-1 font-medium text-gray-700 cursor-pointer">
+                    {item.name}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={hardwareSelections[item.id]?.quantity || ""}
+                      onChange={(e) => {
+                        const newSelections = { ...hardwareSelections };
+                        newSelections[item.id] = {
+                          ...newSelections[item.id],
+                          quantity: parseInt(e.target.value) || 0,
+                          selected: true,
+                          name: item.name,
+                          unit: item.unit
+                        };
+                        handleJobAnswer(jobType, getQuestionIdForAnswer(question.id), newSelections);
+                      }}
+                      className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                      placeholder="Qty"
+                    />
+                    <span className="text-xs text-gray-500 w-12">{item.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         );
+
+      case "material-list": {
+        // Real-time calculated materials list
+        const matListAnswers = jobData.jobSpecificAnswers;
+        const deckDims = matListAnswers[`${jobType}_main_deck_dimensions`];
+        const matDeckingMaterial = matListAnswers[`${jobType}_decking_material`] || "Composite";
+        const matRailingMaterial = matListAnswers[`${jobType}_railing_material`] || "Composite";
+        const matLevelRailing = parseFloat(matListAnswers[`${jobType}_total_level_railing_linear_ft`] || "0");
+        const matStairRailing = parseFloat(matListAnswers[`${jobType}_total_stair_railing_linear_ft`] || "0");
+        const matNumSteps = parseInt(matListAnswers[`${jobType}_number_of_steps`] || "0");
+        const matStringerLen = parseFloat(matListAnswers[`${jobType}_stringer_length`] || "0");
+        const matNumStringers = matListAnswers[`${jobType}_number_of_stringers`];
+        const matHardwareList = matListAnswers[`${jobType}_hardware_selection`] || {};
+
+        // Calculate square footage
+        let matTotalSqFt = 0;
+        if (deckDims && Array.isArray(deckDims)) {
+          matTotalSqFt = deckDims.reduce((total: number, dim: any) => {
+            return total + (parseFloat(dim.length || 0) * parseFloat(dim.width || 0));
+          }, 0);
+        }
+
+        // Calculate materials
+        const matList: Array<{category: string, item: string, quantity: number, unit: string}> = [];
+
+        if (matTotalSqFt > 0) {
+          // Decking
+          const deckingLF = Math.ceil(matTotalSqFt * 2.2);
+          matList.push({ category: "Decking", item: `${matDeckingMaterial} Decking 5/4x6`, quantity: deckingLF, unit: "linear ft" });
+
+          // Framing
+          const joistCount = Math.ceil(matTotalSqFt / 16) + 2; // Approx 16" OC
+          matList.push({ category: "Framing", item: "2x8 Pressure Treated Joists", quantity: joistCount * 12, unit: "linear ft" });
+          matList.push({ category: "Framing", item: "2x10 Beam Material", quantity: Math.ceil(Math.sqrt(matTotalSqFt) * 2), unit: "linear ft" });
+          matList.push({ category: "Framing", item: "Ledger Board 2x10", quantity: Math.ceil(Math.sqrt(matTotalSqFt)), unit: "linear ft" });
+
+          // Posts & Footings
+          const postCount = Math.ceil(matTotalSqFt / 64) + 2;
+          matList.push({ category: "Posts", item: "6x6 Posts", quantity: postCount, unit: "each (8ft)" });
+          matList.push({ category: "Concrete", item: "Concrete Footings", quantity: postCount, unit: "each" });
+        }
+
+        // Railings
+        if (matLevelRailing > 0) {
+          matList.push({ category: "Railings", item: `${matRailingMaterial} Level Railing`, quantity: Math.ceil(matLevelRailing), unit: "linear ft" });
+        }
+        if (matStairRailing > 0) {
+          matList.push({ category: "Railings", item: `${matRailingMaterial} Stair Railing`, quantity: Math.ceil(matStairRailing), unit: "linear ft" });
+        }
+
+        // Stairs
+        if (matNumSteps > 0) {
+          const stringerCount = matNumStringers ? parseInt(matNumStringers.charAt(0)) : 3;
+          matList.push({ category: "Stairs", item: "Stair Treads", quantity: matNumSteps * 2, unit: "boards" });
+          if (matStringerLen > 0) {
+            matList.push({ category: "Stairs", item: `Stringers (${matStringerLen} ft each)`, quantity: stringerCount, unit: "each" });
+          }
+        }
+
+        // Group by category
+        const matGrouped: Record<string, typeof matList> = {};
+        matList.forEach(m => {
+          if (!matGrouped[m.category]) matGrouped[m.category] = [];
+          matGrouped[m.category].push(m);
+        });
+
+        // Hardware from checklist
+        const matSelectedHardware = Object.entries(matHardwareList)
+          .filter(([_, hw]: [string, any]) => hw?.selected && hw?.quantity > 0)
+          .map(([_, hw]: [string, any]) => ({ name: hw.name, quantity: hw.quantity, unit: hw.unit }));
+
+        return (
+          <div className="space-y-4">
+            {matList.length === 0 && matSelectedHardware.length === 0 ? (
+              <div className="p-6 bg-gray-100 rounded-lg text-center">
+                <p className="text-gray-600">Enter deck dimensions and other measurements above to generate the materials list.</p>
+              </div>
+            ) : (
+              <>
+                {Object.entries(matGrouped).map(([category, items]) => (
+                  <div key={category} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                      <h4 className="font-bold text-gray-800">{category}</h4>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {items.map((item, idx) => (
+                        <div key={idx} className="px-4 py-3 flex justify-between items-center">
+                          <span className="text-gray-700">{item.item}</span>
+                          <span className="font-bold text-gray-900">{item.quantity} {item.unit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {matSelectedHardware.length > 0 && (
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-amber-100 px-4 py-2 border-b border-amber-200">
+                      <h4 className="font-bold text-amber-800">Hardware</h4>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {matSelectedHardware.map((hw, idx) => (
+                        <div key={idx} className="px-4 py-3 flex justify-between items-center">
+                          <span className="text-gray-700">{hw.name}</span>
+                          <span className="font-bold text-gray-900">{hw.quantity} {hw.unit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-800 text-sm">
+                    <strong>Note:</strong> This is an estimated materials list. Actual quantities may vary based on site conditions and final measurements. Always add 10% for waste.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      }
 
       case "add-sections":
         const sections = value || [{ description: "" }];
