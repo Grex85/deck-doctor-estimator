@@ -1090,8 +1090,7 @@ export default function EstimatorTabs() {
         { id: "railing_powder_coating_color", question: "Powder coating color", type: "select-with-other", options: ["Black", "White", "Bronze", "Silver", "Gray", "Custom color"], category: "Railings", dependency: "railing_powder_coating", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "railing_composite_color", question: "Composite railing color", type: "select-with-other", options: ["White", "Black", "Gray", "Brown", "Tan", "Natural wood tone", "Dark espresso"], category: "Railings", dependency: "railing_material", dependencyValue: "Composite", allowOther: true, perStructure: true },
         { id: "railing_custom_description", question: "Custom railing description", type: "textarea", category: "Railings", dependency: "railing_material", dependencyValue: "Custom", perStructure: true },
-        { id: "stairs_have_railings", question: "Do the stairs have railings?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Railings", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
-        { id: "stair_railing_sides", question: "Stair railing on one side or both sides?", type: "checkbox-multiple", options: ["One side", "Both sides"], category: "Railings", dependency: "stairs_have_railings", dependencyValue: true, perStructure: true },
+        { id: "stairs_have_railings", question: "Do the stairs have railings?", type: "checkbox-multiple", options: ["Yes - one side", "Yes - both sides", "No"], category: "Railings", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "railing_height", question: "Railing height", type: "select-with-other", options: ["36 inches (standard)", "42 inches (high deck)"], category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "railing_attachment_method", question: "Railing attachment method", type: "select-with-other", options: ["Surface mount", "Side mount"], category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "total_level_railing_linear_ft", question: "Total level horizontal railing", type: "number", unit: "linear ft", category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, perStructure: true },
@@ -3549,8 +3548,7 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
           const deckHeightInches = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
           const deckHeightFeet = deckHeightInches / 12;
           const hasStairs = jobData.jobSpecificAnswers[`${jobType}_deck_has_stairs`];
-          const stairRailingSides = jobData.jobSpecificAnswers[`${jobType}_stair_railing_sides`];
-          const hasStairRailings = jobData.jobSpecificAnswers[`${jobType}_stairs_have_railings`];
+          const stairRailingAnswer = jobData.jobSpecificAnswers[`${jobType}_stairs_have_railings`];
 
           if (deckHeightInches > 0 && (hasStairs === true || (Array.isArray(hasStairs) && hasStairs.includes("Yes")))) {
             // Calculate based on ideal riser height of 7.5 inches (code compliant range is 4"-7.75")
@@ -3567,9 +3565,11 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
             const stringerLength = Math.sqrt(Math.pow(deckHeightInches, 2) + Math.pow(totalRun, 2)) / 12; // Convert to feet
             const stringerLengthRounded = Math.ceil(stringerLength * 10) / 10; // Round to 1 decimal
 
-            // Determine if one or both sides for railing
-            const needsRailing = hasStairRailings === true || (Array.isArray(hasStairRailings) && hasStairRailings.includes("Yes"));
-            const railingSideMultiplier = (stairRailingSides === "Both sides" || (Array.isArray(stairRailingSides) && stairRailingSides.includes("Both sides"))) ? 2 : 1;
+            // Determine railing needs from combined question (Yes - one side, Yes - both sides, No)
+            const hasOneSide = Array.isArray(stairRailingAnswer) && stairRailingAnswer.includes("Yes - one side");
+            const hasBothSides = Array.isArray(stairRailingAnswer) && stairRailingAnswer.includes("Yes - both sides");
+            const needsRailing = hasOneSide || hasBothSides;
+            const railingSideMultiplier = hasBothSides ? 2 : 1;
             const totalStairRailing = needsRailing ? Math.ceil(stringerLength * railingSideMultiplier) : 0;
 
             // Auto-populate the calculated values in state
@@ -3613,7 +3613,7 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
                     <div className="bg-white p-3 rounded-lg border border-amber-200">
                       <p className="text-gray-600 text-xs uppercase tracking-wide">Stair Railing</p>
                       <p className="text-2xl font-bold text-amber-700">{totalStairRailing} ft</p>
-                      <p className="text-xs text-gray-500">{railingSideMultiplier === 2 ? "both sides" : "one side"}</p>
+                      <p className="text-xs text-gray-500">{hasBothSides ? "both sides" : "one side"}</p>
                     </div>
                   )}
                 </div>
