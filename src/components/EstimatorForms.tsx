@@ -3512,10 +3512,15 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
             </div>
           );
         } else if (question.id === "railing_code_warning") {
+          // Helper to get field key with structure prefix
+          const getFieldKey = (qId: string) => structureNumber
+            ? `${jobType}_structure_${structureNumber}_${qId}`
+            : `${jobType}_${qId}`;
+
           // Railing code warning function moved inside component to access jobData
-          const deckHeightInches = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          const deckHeightInches = parseFloat(jobData.jobSpecificAnswers[getFieldKey('deck_height_from_ground')] || "0");
           const deckHeightFeet = deckHeightInches / 12;
-          const railingNeeded = jobData.jobSpecificAnswers[`${jobType}_does_deck_have_railings`];
+          const railingNeeded = jobData.jobSpecificAnswers[getFieldKey('does_deck_have_railings')];
 
           if (deckHeightInches > 30 && !railingNeeded) {
             return (
@@ -3554,10 +3559,15 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
           }
           return null;
         } else if (question.id === "stair_calculation") {
-          const deckHeightInches = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          // Helper to get field key with structure prefix
+          const getFieldKey = (qId: string) => structureNumber
+            ? `${jobType}_structure_${structureNumber}_${qId}`
+            : `${jobType}_${qId}`;
+
+          const deckHeightInches = parseFloat(jobData.jobSpecificAnswers[getFieldKey('deck_height_from_ground')] || "0");
           const deckHeightFeet = deckHeightInches / 12;
-          const hasStairs = jobData.jobSpecificAnswers[`${jobType}_deck_has_stairs`];
-          const stairRailingAnswer = jobData.jobSpecificAnswers[`${jobType}_stairs_have_railings`];
+          const hasStairs = jobData.jobSpecificAnswers[getFieldKey('deck_has_stairs')];
+          const stairRailingAnswer = jobData.jobSpecificAnswers[getFieldKey('stairs_have_railings')];
 
           if (deckHeightInches > 0 && (hasStairs === true || (Array.isArray(hasStairs) && hasStairs.includes("Yes")))) {
             // Calculate based on ideal riser height of 7.5 inches (code compliant range is 4"-7.75")
@@ -3581,19 +3591,19 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
             const railingSideMultiplier = hasBothSides ? 2 : 1;
             const totalStairRailing = needsRailing ? Math.ceil(stringerLength * railingSideMultiplier) : 0;
 
-            // Auto-populate the calculated values in state
-            const currentSteps = jobData.jobSpecificAnswers[`${jobType}_number_of_steps`];
-            const currentStairRailing = jobData.jobSpecificAnswers[`${jobType}_total_stair_railing_linear_ft`];
-            const currentStringerLength = jobData.jobSpecificAnswers[`${jobType}_stringer_length`];
+            // Auto-populate the calculated values in state using getQuestionIdForAnswer
+            const currentSteps = jobData.jobSpecificAnswers[getFieldKey('number_of_steps')];
+            const currentStairRailing = jobData.jobSpecificAnswers[getFieldKey('total_stair_railing_linear_ft')];
+            const currentStringerLength = jobData.jobSpecificAnswers[getFieldKey('stringer_length')];
 
             if (currentSteps !== estimatedTreads) {
-              setTimeout(() => handleJobAnswer(jobType, 'number_of_steps', estimatedTreads), 100);
+              setTimeout(() => handleJobAnswer(jobType, getQuestionIdForAnswer('number_of_steps'), estimatedTreads), 100);
             }
             if (needsRailing && currentStairRailing !== totalStairRailing) {
-              setTimeout(() => handleJobAnswer(jobType, 'total_stair_railing_linear_ft', totalStairRailing), 150);
+              setTimeout(() => handleJobAnswer(jobType, getQuestionIdForAnswer('total_stair_railing_linear_ft'), totalStairRailing), 150);
             }
             if (currentStringerLength !== stringerLengthRounded) {
-              setTimeout(() => handleJobAnswer(jobType, 'stringer_length', stringerLengthRounded), 200);
+              setTimeout(() => handleJobAnswer(jobType, getQuestionIdForAnswer('stringer_length'), stringerLengthRounded), 200);
             }
 
             return (
@@ -3676,9 +3686,13 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
             </div>
           );
         } else if (question.id === "calculated_stair_railing_display") {
-          // Calculate directly from deck height
-          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
-          const stairRailingAns = jobData.jobSpecificAnswers[`${jobType}_stairs_have_railings`];
+          // Helper to get field key with structure prefix
+          const getFieldKey = (qId: string) => structureNumber
+            ? `${jobType}_structure_${structureNumber}_${qId}`
+            : `${jobType}_${qId}`;
+
+          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[getFieldKey('deck_height_from_ground')] || "0");
+          const stairRailingAns = jobData.jobSpecificAnswers[getFieldKey('stairs_have_railings')];
           const hasOneSideRail = Array.isArray(stairRailingAns) && stairRailingAns.includes("Yes - one side");
           const hasBothSidesRail = Array.isArray(stairRailingAns) && stairRailingAns.includes("Yes - both sides");
 
@@ -3700,8 +3714,12 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
           }
           return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height and select stair railing option to calculate</div>;
         } else if (question.id === "calculated_treads_display") {
-          // Calculate directly from deck height
-          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          // Helper to get field key with structure prefix
+          const getFieldKey = (qId: string) => structureNumber
+            ? `${jobType}_structure_${structureNumber}_${qId}`
+            : `${jobType}_${qId}`;
+
+          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[getFieldKey('deck_height_from_ground')] || "0");
           if (deckHeightIn > 0) {
             const numTreads = Math.ceil(deckHeightIn / 7.5);
             const riserHeight = (deckHeightIn / numTreads).toFixed(2);
@@ -3717,8 +3735,12 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
           }
           return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height to calculate number of treads</div>;
         } else if (question.id === "calculated_stringer_length_display") {
-          // Calculate directly from deck height
-          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          // Helper to get field key with structure prefix
+          const getFieldKey = (qId: string) => structureNumber
+            ? `${jobType}_structure_${structureNumber}_${qId}`
+            : `${jobType}_${qId}`;
+
+          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[getFieldKey('deck_height_from_ground')] || "0");
           if (deckHeightIn > 0) {
             const treads = Math.ceil(deckHeightIn / 7.5);
             const totalRun = treads * 10.5;
@@ -3808,17 +3830,22 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
         );
 
       case "material-list": {
+        // Helper to get field key with structure prefix
+        const getMatFieldKey = (qId: string) => structureNumber
+          ? `${jobType}_structure_${structureNumber}_${qId}`
+          : `${jobType}_${qId}`;
+
         // Real-time calculated materials list
         const matListAnswers = jobData.jobSpecificAnswers;
-        const deckDims = matListAnswers[`${jobType}_main_deck_dimensions`];
-        const matDeckingMaterial = matListAnswers[`${jobType}_decking_material`] || "Composite";
-        const matRailingMaterial = matListAnswers[`${jobType}_railing_material`] || "Composite";
-        const matLevelRailing = parseFloat(matListAnswers[`${jobType}_total_level_railing_linear_ft`] || "0");
-        const matStairRailing = parseFloat(matListAnswers[`${jobType}_total_stair_railing_linear_ft`] || "0");
-        const matNumSteps = parseInt(matListAnswers[`${jobType}_number_of_steps`] || "0");
-        const matStringerLen = parseFloat(matListAnswers[`${jobType}_stringer_length`] || "0");
-        const matNumStringers = matListAnswers[`${jobType}_number_of_stringers`];
-        const matHardwareList = matListAnswers[`${jobType}_hardware_selection`] || {};
+        const deckDims = matListAnswers[getMatFieldKey('main_deck_dimensions')];
+        const matDeckingMaterial = matListAnswers[getMatFieldKey('decking_material')] || "Composite";
+        const matRailingMaterial = matListAnswers[getMatFieldKey('railing_material')] || "Composite";
+        const matLevelRailing = parseFloat(matListAnswers[getMatFieldKey('total_level_railing_linear_ft')] || "0");
+        const matStairRailing = parseFloat(matListAnswers[getMatFieldKey('total_stair_railing_linear_ft')] || "0");
+        const matNumSteps = parseInt(matListAnswers[getMatFieldKey('number_of_steps')] || "0");
+        const matStringerLen = parseFloat(matListAnswers[getMatFieldKey('stringer_length')] || "0");
+        const matNumStringers = matListAnswers[getMatFieldKey('number_of_stringers')];
+        const matHardwareList = matListAnswers[getMatFieldKey('hardware_selection')] || {};
 
         // Calculate square footage
         let matTotalSqFt = 0;
