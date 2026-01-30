@@ -1429,33 +1429,6 @@ export default function EstimatorTabs() {
 
           // ===== DECKING QUESTIONS =====
           {
-            id: "picture_frame_border",
-            question: "Picture frame border",
-            type: "select-with-other",
-            options: ["No picture frame", "Single board", "Double board", "Triple board"],
-            category: "Decking",
-            allowOther: true,
-            perStructure: true,
-          },
-          {
-            id: "decking_board_layout",
-            question: "Decking board layout",
-            type: "select-with-other",
-            options: [
-              "Horizontal (parallel to house)",
-              "Perpendicular (to house)",
-              "Diagonal (45-degree angle)",
-              "Herringbone",
-              "Chevron",
-              "Parquet",
-              "Picture frame with diagonal",
-              "Multi-directional"
-            ],
-            category: "Decking",
-            allowOther: true,
-            perStructure: true,
-          },
-          {
             id: "decking_material",
             question: "Decking material preference",
             type: "select-with-other",
@@ -1491,6 +1464,33 @@ export default function EstimatorTabs() {
             category: "Decking",
             dependency: "decking_material",
             dependencyValue: ["Deckorators Voyage (Surestone Technology)", "Deckorators Vault (Mineral-Based)", "Deckorators Vista (Tropical Look)", "Deckorators Trailhead (Cost-Effective)", "Composite (Other Brand)"],
+            allowOther: true,
+            perStructure: true,
+          },
+          {
+            id: "picture_frame_border",
+            question: "Picture frame border",
+            type: "select-with-other",
+            options: ["No picture frame", "Single board", "Double board", "Triple board"],
+            category: "Decking",
+            allowOther: true,
+            perStructure: true,
+          },
+          {
+            id: "decking_board_layout",
+            question: "Decking board layout",
+            type: "select-with-other",
+            options: [
+              "Horizontal (parallel to house)",
+              "Perpendicular (to house)",
+              "Diagonal (45-degree angle)",
+              "Herringbone",
+              "Chevron",
+              "Parquet",
+              "Picture frame with diagonal",
+              "Multi-directional"
+            ],
+            category: "Decking",
             allowOther: true,
             perStructure: true,
           },
