@@ -1095,17 +1095,15 @@ export default function EstimatorTabs() {
         { id: "railing_height", question: "Railing height", type: "select-with-other", options: ["36 inches (standard)", "42 inches (high deck)"], category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "railing_attachment_method", question: "Railing attachment method", type: "select-with-other", options: ["Surface mount", "Side mount"], category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "total_level_railing_linear_ft", question: "Total level horizontal railing", type: "number", unit: "linear ft", category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, perStructure: true },
-        { id: "total_stair_railing_linear_ft", question: "Total stair railing", type: "number", unit: "linear ft", category: "Railings", dependency: "stairs_have_railings", dependencyValue: true, perStructure: true },
-
         // ===== STAIRS =====
+        // Note: number_of_steps, stair_railing_linear_ft, and stringer_length are all auto-calculated from deck height
         { id: "stair_calculation", question: "Automatic Stair & Railing Calculation", type: "calculation-display", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
-        { id: "number_of_steps", question: "Number of steps (auto-calculated from deck height)", type: "number", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stair_tread_material", question: "What material are the stair treads?", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Redwood", "Hardwood", "Composite", "Same as deck"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "stair_tread_boards", question: "Stair treads: one board or two?", type: "select", options: ["One board", "Two boards"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stairs_enclosed_or_open", question: "Are stairs enclosed or open?", type: "select", options: ["Enclosed", "Open"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stairs_have_risers", question: "Are there risers?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stair_stringer_material", question: "What material are the stringers?", type: "select-with-other", options: ["Pressure Treated Pine", "Cedar", "Steel", "Composite"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, allowOther: true, perStructure: true },
-        { id: "number_of_stringers", question: "How many stringers?", type: "number", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
+        { id: "number_of_stringers", question: "How many stringers?", type: "select", options: ["3 (standard up to 36\" wide)", "4 (wider stairs)", "5 (extra wide)"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stairs_have_landing", question: "Do stairs have a middle landing?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "landing_type", question: "Type of landing at bottom of stairs", type: "select-with-other", options: ["Concrete pad", "Pavers", "Gravel", "Grass", "Wood platform", "No landing"], category: "Stairs", dependency: "stairs_have_landing", dependencyValue: true, allowOther: true, perStructure: true },
 
@@ -2079,44 +2077,6 @@ export default function EstimatorTabs() {
       });
     }
   }, [jobData.paintStainColors, jobData.jobTypes]);
-
-  // Auto-calculate number of steps from stair railing measurements
-  useEffect(() => {
-    jobData.jobTypes.forEach(jobType => {
-      if (jobType.includes("Decks")) {
-        const stairRailingLinearFt = parseFloat(jobData.jobSpecificAnswers[`${jobType}_total_stair_railing_linear_ft`] || "0");
-        const railingSides = jobData.jobSpecificAnswers[`${jobType}_stair_railing_sides`];
-
-        if (stairRailingLinearFt > 0 && railingSides) {
-          // Adjust railing length based on sides
-          let singleSideRailing = stairRailingLinearFt;
-          if (railingSides === "Both sides") {
-            singleSideRailing = stairRailingLinearFt / 2;
-          }
-
-          // Convert to inches
-          const railingLengthInches = singleSideRailing * 12;
-
-          // Using typical stair geometry:
-          // Railing length is the hypotenuse
-          // Typical rise:run ratio is 7:10 (7" rise, 10" tread)
-          // hypotenuse = sqrt(rise² + run²)
-          // If we know hypotenuse, we can solve for number of steps
-          // Each step: sqrt(7² + 10²) = sqrt(149) = 12.2 inches of railing
-          const inchesPerStep = Math.sqrt(Math.pow(7, 2) + Math.pow(10, 2)); // ~12.2 inches
-          const numberOfSteps = Math.round(railingLengthInches / inchesPerStep);
-
-          setJobData((prev) => ({
-            ...prev,
-            jobSpecificAnswers: {
-              ...prev.jobSpecificAnswers,
-              [`${jobType}_calculated_number_of_steps`]: numberOfSteps,
-            }
-          }));
-        }
-      }
-    });
-  }, [jobData.jobTypes, jobData.jobSpecificAnswers]);
 
   // Data sharing between job types - auto-populate common fields
   useEffect(() => {
@@ -3590,6 +3550,7 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
           const deckHeightFeet = deckHeightInches / 12;
           const hasStairs = jobData.jobSpecificAnswers[`${jobType}_deck_has_stairs`];
           const stairRailingSides = jobData.jobSpecificAnswers[`${jobType}_stair_railing_sides`];
+          const hasStairRailings = jobData.jobSpecificAnswers[`${jobType}_stairs_have_railings`];
 
           if (deckHeightInches > 0 && (hasStairs === true || (Array.isArray(hasStairs) && hasStairs.includes("Yes")))) {
             // Calculate based on ideal riser height of 7.5 inches (code compliant range is 4"-7.75")
@@ -3602,49 +3563,62 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
             const totalRun = estimatedTreads * treadDepth; // Total horizontal run in inches
             const totalRunFeet = totalRun / 12;
 
-            // Calculate stair railing length using Pythagorean theorem (hypotenuse)
-            const stairRailingLength = Math.sqrt(Math.pow(deckHeightInches, 2) + Math.pow(totalRun, 2)) / 12; // Convert to feet
+            // Calculate stringer/railing length using Pythagorean theorem (hypotenuse)
+            const stringerLength = Math.sqrt(Math.pow(deckHeightInches, 2) + Math.pow(totalRun, 2)) / 12; // Convert to feet
+            const stringerLengthRounded = Math.ceil(stringerLength * 10) / 10; // Round to 1 decimal
 
-            // Determine if one or both sides
-            const railingSideMultiplier = stairRailingSides === "Both sides" ? 2 : 1;
-            const totalStairRailing = Math.ceil(stairRailingLength * railingSideMultiplier);
+            // Determine if one or both sides for railing
+            const needsRailing = hasStairRailings === true || (Array.isArray(hasStairRailings) && hasStairRailings.includes("Yes"));
+            const railingSideMultiplier = (stairRailingSides === "Both sides" || (Array.isArray(stairRailingSides) && stairRailingSides.includes("Both sides"))) ? 2 : 1;
+            const totalStairRailing = needsRailing ? Math.ceil(stringerLength * railingSideMultiplier) : 0;
 
-            // Auto-populate the number of steps
+            // Auto-populate the calculated values in state
             const currentSteps = jobData.jobSpecificAnswers[`${jobType}_number_of_steps`];
-            if (!currentSteps || currentSteps !== estimatedTreads) {
-              setTimeout(() => {
-                handleJobAnswer(jobType, 'number_of_steps', estimatedTreads);
-              }, 100);
-            }
-
-            // Auto-populate the stair railing linear feet
             const currentStairRailing = jobData.jobSpecificAnswers[`${jobType}_total_stair_railing_linear_ft`];
-            if (!currentStairRailing || currentStairRailing !== totalStairRailing) {
-              setTimeout(() => {
-                handleJobAnswer(jobType, 'total_stair_railing_linear_ft', totalStairRailing);
-              }, 150);
+            const currentStringerLength = jobData.jobSpecificAnswers[`${jobType}_stringer_length`];
+
+            if (currentSteps !== estimatedTreads) {
+              setTimeout(() => handleJobAnswer(jobType, 'number_of_steps', estimatedTreads), 100);
+            }
+            if (needsRailing && currentStairRailing !== totalStairRailing) {
+              setTimeout(() => handleJobAnswer(jobType, 'total_stair_railing_linear_ft', totalStairRailing), 150);
+            }
+            if (currentStringerLength !== stringerLengthRounded) {
+              setTimeout(() => handleJobAnswer(jobType, 'stringer_length', stringerLengthRounded), 200);
             }
 
             return (
               <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-600">
                 <h4 className="font-bold text-gray-900 mb-3 text-base flex items-center">
                   <Calculator className="w-5 h-5 mr-2 text-green-600" />
-                  Automatic Stair & Railing Calculation
+                  Automatic Stair Calculations (from {deckHeightInches}" deck height)
                 </h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-2">
-                    <p><strong className="text-gray-900">Deck Height:</strong> {deckHeightInches}" ({deckHeightFeet.toFixed(1)} ft)</p>
-                    <p><strong className="text-gray-900">Number of Treads:</strong> <span className="text-green-700 font-bold">{estimatedTreads} steps</span></p>
-                    <p><strong className="text-gray-900">Riser Height:</strong> {actualRiserHeight.toFixed(2)}" per step</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <div className="bg-white p-3 rounded-lg border border-green-200">
+                    <p className="text-gray-600 text-xs uppercase tracking-wide">Number of Treads</p>
+                    <p className="text-2xl font-bold text-green-700">{estimatedTreads}</p>
+                    <p className="text-xs text-gray-500">at {actualRiserHeight.toFixed(2)}" rise each</p>
                   </div>
-                  <div className="space-y-2">
-                    <p><strong className="text-gray-900">Tread Depth:</strong> {treadDepth}" (standard)</p>
-                    <p><strong className="text-gray-900">Total Stair Run:</strong> {totalRunFeet.toFixed(1)} ft</p>
-                    <p><strong className="text-gray-900">Stair Railing:</strong> <span className="text-blue-700 font-bold">{totalStairRailing} linear ft</span> {stairRailingSides === "Both sides" ? "(both sides)" : "(one side)"}</p>
+                  <div className="bg-white p-3 rounded-lg border border-blue-200">
+                    <p className="text-gray-600 text-xs uppercase tracking-wide">Stringer Length</p>
+                    <p className="text-2xl font-bold text-blue-700">{stringerLengthRounded} ft</p>
+                    <p className="text-xs text-gray-500">per stringer</p>
                   </div>
+                  <div className="bg-white p-3 rounded-lg border border-purple-200">
+                    <p className="text-gray-600 text-xs uppercase tracking-wide">Total Stair Run</p>
+                    <p className="text-2xl font-bold text-purple-700">{totalRunFeet.toFixed(1)} ft</p>
+                    <p className="text-xs text-gray-500">horizontal distance</p>
+                  </div>
+                  {needsRailing && (
+                    <div className="bg-white p-3 rounded-lg border border-amber-200">
+                      <p className="text-gray-600 text-xs uppercase tracking-wide">Stair Railing</p>
+                      <p className="text-2xl font-bold text-amber-700">{totalStairRailing} ft</p>
+                      <p className="text-xs text-gray-500">{railingSideMultiplier === 2 ? "both sides" : "one side"}</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-gray-600 text-xs mt-3 border-t pt-2">
-                  <strong>Note:</strong> Based on 7.5" ideal riser height and 10.5" tread depth. Railing calculated using stair angle. Values auto-populated above.
+                <p className="text-gray-500 text-xs mt-3 pt-2 border-t border-gray-200">
+                  Based on 7.5" ideal riser height and 10.5" tread depth. These values are automatically saved.
                 </p>
               </div>
             );
@@ -3692,34 +3666,6 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
               </div>
             </div>
           );
-        } else if (question.id === "calculated_number_of_steps") {
-          const numberOfSteps = jobData.jobSpecificAnswers[`${jobType}_calculated_number_of_steps`];
-          const stairRailingLinearFt = jobData.jobSpecificAnswers[`${jobType}_total_stair_railing_linear_ft`];
-          const railingSides = jobData.jobSpecificAnswers[`${jobType}_stair_railing_sides`];
-
-          if (numberOfSteps && stairRailingLinearFt) {
-            return (
-              <div className="p-4 bg-blue-100 rounded-lg border-l-4 border-blue-500">
-                <div className="flex items-center mb-2">
-                  <Calculator className="w-5 h-5 text-blue-600 mr-2" />
-                  <span className="font-bold text-blue-800">Auto-Calculated from Railing Measurements</span>
-                </div>
-                <p className="text-blue-900 text-lg font-bold">{numberOfSteps} steps</p>
-                <p className="text-blue-700 text-sm mt-1">
-                  Based on {stairRailingLinearFt} linear ft of railing ({railingSides})
-                </p>
-                <p className="text-blue-600 text-xs mt-1">
-                  Calculation uses typical 7" rise and 10" tread dimensions
-                </p>
-              </div>
-            );
-          } else {
-            return (
-              <div className="p-4 bg-gray-100 rounded-lg">
-                <p className="text-gray-600 text-sm">Enter stair railing measurements above to calculate number of steps</p>
-              </div>
-            );
-          }
         }
         return null;
 
