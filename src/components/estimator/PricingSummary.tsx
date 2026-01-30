@@ -471,7 +471,7 @@ export function PricingSummary({
                 }`}
               >
                 <span className="block text-lg">Permit Required</span>
-                <span className="block text-sm opacity-70">+$250</span>
+                <span className="block text-sm opacity-70">+$3,500</span>
               </button>
             </div>
           </div>
@@ -640,7 +640,7 @@ export function PricingSummary({
                 {permitRequired && (
                   <div className="flex justify-between py-2">
                     <span className="text-neutral-600">Permit Fee</span>
-                    <span className="font-semibold text-indigo-600">$250.00</span>
+                    <span className="font-semibold text-indigo-600">$3,500.00</span>
                   </div>
                 )}
                 {painInTheAssCharge > 0 && (
