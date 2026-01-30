@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ClipboardList, Calculator, Camera, MapPin, FileText, ArrowRight } from "lucide-react";
+import { ClipboardList, Calculator, Camera, MapPin, FileText, ArrowRight, Target, TrendingUp } from "lucide-react";
 
 export default function HomePage() {
   const router = useRouter();
@@ -103,6 +103,28 @@ export default function HomePage() {
               Generate professional estimates and send directly to the office via email or cloud sync.
             </p>
           </div>
+
+          {/* Feature 5 - Competitive Tracker */}
+          <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 hover:bg-slate-800/70 transition-all">
+            <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mb-4">
+              <Target className="w-6 h-6 text-red-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Competitive Tracker</h3>
+            <p className="text-slate-400 text-sm">
+              Log won/lost bids, track competitor pricing, and analyze your win rate over time.
+            </p>
+          </div>
+
+          {/* Feature 6 - Analytics */}
+          <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 hover:bg-slate-800/70 transition-all">
+            <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center mb-4">
+              <TrendingUp className="w-6 h-6 text-cyan-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Win Rate Analytics</h3>
+            <p className="text-slate-400 text-sm">
+              See pricing insights, loss reasons, and performance data to adjust your rates strategically.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -120,6 +142,13 @@ export default function HomePage() {
             >
               <ClipboardList className="w-5 h-5" />
               Start New Estimate
+            </Link>
+            <Link
+              href="/tracker"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Target className="w-5 h-5" />
+              Competitive Tracker
             </Link>
             <a
               href="https://console.firebase.google.com"

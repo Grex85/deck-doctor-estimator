@@ -65,25 +65,33 @@ export const MATERIAL_PRICES: Record<string, MaterialPrice> = {
   'Stair Riser': { name: 'Stair Riser', unit: 'each', price: 6.00, category: 'Stairs' },
 };
 
-// Labor Rates
+// Crew Rates
+export const CREW_RATES = {
+  crew1: { name: 'Crew 1 (Standard)', ratePerHour: 95.00 },
+  crew2: { name: 'Crew 2 (Premium)', ratePerHour: 166.00 },
+};
+
+// Labor Rates (using Crew 1 as default base rate)
 export const LABOR_RATES: Record<string, LaborRate> = {
-  'General Framing': { name: 'General Framing', ratePerHour: 75.00, ratePerUnit: 8.50, unit: 'sq ft' },
-  'Decking Installation': { name: 'Decking Installation', ratePerHour: 75.00, ratePerUnit: 6.00, unit: 'sq ft' },
-  'Railing Installation': { name: 'Railing Installation', ratePerHour: 75.00, ratePerUnit: 15.00, unit: 'linear ft' },
-  'Stair Construction': { name: 'Stair Construction', ratePerHour: 85.00, ratePerUnit: 125.00, unit: 'stair' },
-  'Concrete Work': { name: 'Concrete Work', ratePerHour: 85.00, ratePerUnit: 75.00, unit: 'footing' },
-  'Demolition': { name: 'Demolition', ratePerHour: 65.00, ratePerUnit: 5.00, unit: 'sq ft' },
-  'Refinishing': { name: 'Refinishing', ratePerHour: 65.00, ratePerUnit: 3.50, unit: 'sq ft' },
-  'Pergola Construction': { name: 'Pergola Construction', ratePerHour: 85.00 },
-  'Painting/Staining': { name: 'Painting/Staining', ratePerHour: 65.00, ratePerUnit: 2.50, unit: 'sq ft' },
+  'General Framing': { name: 'General Framing', ratePerHour: 95.00, ratePerUnit: 8.50, unit: 'sq ft' },
+  'Decking Installation': { name: 'Decking Installation', ratePerHour: 95.00, ratePerUnit: 6.00, unit: 'sq ft' },
+  'Railing Installation': { name: 'Railing Installation', ratePerHour: 95.00, ratePerUnit: 15.00, unit: 'linear ft' },
+  'Stair Construction': { name: 'Stair Construction', ratePerHour: 95.00, ratePerUnit: 125.00, unit: 'stair' },
+  'Concrete Work': { name: 'Concrete Work', ratePerHour: 95.00, ratePerUnit: 75.00, unit: 'footing' },
+  'Demolition': { name: 'Demolition', ratePerHour: 95.00, ratePerUnit: 5.00, unit: 'sq ft' },
+  'Refinishing': { name: 'Refinishing', ratePerHour: 95.00, ratePerUnit: 3.50, unit: 'sq ft' },
+  'Pergola Construction': { name: 'Pergola Construction', ratePerHour: 95.00 },
+  'Painting/Staining': { name: 'Painting/Staining', ratePerHour: 95.00, ratePerUnit: 2.50, unit: 'sq ft' },
 };
 
 // Markup and Overhead
+// Cost breakdown: ~1/3 Materials, ~1/3 Labor, ~1/3 Overhead+Profit
+// Profit margin: 10-20%
 export const PRICING_FACTORS = {
-  materialMarkup: 0.15, // 15% markup on materials
-  overhead: 0.10, // 10% overhead
-  profit: 0.20, // 20% profit margin
-  permitFee: 250.00, // Average permit fee
+  materialMarkup: 0.43, // 43% markup on materials
+  overhead: 0.18, // 18% overhead (part of the 1/3 for overhead+profit)
+  profit: 0.15, // 15% profit margin (10-20% range, using middle)
+  permitFee: 3500.00, // Permit fee when required
   wasteFactor: 0.10, // 10% waste allowance for materials
 };
 

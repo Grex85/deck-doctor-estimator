@@ -25,7 +25,10 @@ import {
   Upload,
   X,
   DollarSign,
-  Package
+  Package,
+  Mail,
+  MessageSquare,
+  Send
 } from "lucide-react";
 import { DrawingModal } from "@/components/drawing/DrawingModal";
 import { DrawingGallery } from "@/components/drawing/DrawingGallery";
@@ -1082,12 +1085,15 @@ export default function EstimatorTabs() {
 
         // ===== RAILINGS =====
         { id: "does_deck_have_railings", question: "Does this deck have railings?", type: "checkbox-multiple", options: ["Yes", "No"], required: true, category: "Railings", perStructure: true },
-        { id: "railing_material", question: "Railing material type", type: "select-with-other", options: ["Redwood", "Composite", "Aluminum", "Cable Railing", "Vertical Balluster", "Horizontal Balluster", "Privacy Panel or Wall", "Hog Wire", "Log", "Custom"], required: true, category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
+        { id: "railing_material", question: "Railing material type", type: "select-with-other", options: ["Redwood", "Composite", "Aluminum", "Cable Railing", "Vertical Baluster", "Horizontal Baluster", "Privacy Panel or Wall", "Hog Wire", "Log", "Custom"], required: true, category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
+        { id: "railing_powder_coating", question: "Powder coating for metal railing?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Railings", dependency: "railing_material", dependencyValue: ["Aluminum", "Cable Railing", "Hog Wire"], perStructure: true },
+        { id: "railing_powder_coating_color", question: "Powder coating color", type: "select-with-other", options: ["Black", "White", "Bronze", "Silver", "Gray", "Custom color"], category: "Railings", dependency: "railing_powder_coating", dependencyValue: true, allowOther: true, perStructure: true },
+        { id: "railing_composite_color", question: "Composite railing color", type: "select-with-other", options: ["White", "Black", "Gray", "Brown", "Tan", "Natural wood tone", "Dark espresso"], category: "Railings", dependency: "railing_material", dependencyValue: "Composite", allowOther: true, perStructure: true },
         { id: "railing_custom_description", question: "Custom railing description", type: "textarea", category: "Railings", dependency: "railing_material", dependencyValue: "Custom", perStructure: true },
-        { id: "railing_powder_coating", question: "Powder coating for metal railing?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Railings", dependency: "railing_material", dependencyValue: "Aluminum", perStructure: true },
-        { id: "railing_powder_coating_color", question: "Powder coating color", type: "text", category: "Railings", dependency: "railing_powder_coating", dependencyValue: true, perStructure: true },
         { id: "stairs_have_railings", question: "Do the stairs have railings?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Railings", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stair_railing_sides", question: "Stair railing on one side or both sides?", type: "checkbox-multiple", options: ["One side", "Both sides"], category: "Railings", dependency: "stairs_have_railings", dependencyValue: true, perStructure: true },
+        { id: "railing_height", question: "Railing height", type: "select-with-other", options: ["36 inches (standard)", "42 inches (high deck)"], category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
+        { id: "railing_attachment_method", question: "Railing attachment method", type: "select-with-other", options: ["Surface mount", "Side mount"], category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, allowOther: true, perStructure: true },
         { id: "total_level_railing_linear_ft", question: "Total level horizontal railing", type: "number", unit: "linear ft", category: "Railings", dependency: "does_deck_have_railings", dependencyValue: true, perStructure: true },
         { id: "total_stair_railing_linear_ft", question: "Total stair railing", type: "number", unit: "linear ft", category: "Railings", dependency: "stairs_have_railings", dependencyValue: true, perStructure: true },
 
@@ -1102,11 +1108,6 @@ export default function EstimatorTabs() {
         { id: "number_of_stringers", question: "How many stringers?", type: "number", category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "stairs_have_landing", question: "Do stairs have a middle landing?", type: "checkbox-multiple", options: ["Yes", "No"], category: "Stairs", dependency: "deck_has_stairs", dependencyValue: true, perStructure: true },
         { id: "landing_type", question: "Type of landing at bottom of stairs", type: "select-with-other", options: ["Concrete pad", "Pavers", "Gravel", "Grass", "Wood platform", "No landing"], category: "Stairs", dependency: "stairs_have_landing", dependencyValue: true, allowOther: true, perStructure: true },
-
-        // ===== FASCIA =====
-        { id: "fascia_size", question: "Fascia size", type: "select-with-other", options: ["12 inch", "10 inch", "8 inch", "6 inch"], category: "Fascia", allowOther: true, perStructure: true },
-        { id: "fascia_color", question: "What color is the fascia?", type: "select-with-other", options: ["Match deck color", "White", "Black", "Brown", "Gray", "Natural wood", "Custom color"], category: "Fascia", allowOther: true, perStructure: true },
-        { id: "fascia_linear_feet", question: "Fascia linear feet", type: "number", unit: "linear ft", category: "Fascia", perStructure: true },
 
         // ===== MISCELLANEOUS =====
         { id: "miscellaneous_areas", question: "Miscellaneous items that need attention", type: "add-sections", category: "Miscellaneous", placeholder: "e.g., skirting, fascia, posts, beams, verticals, etc.", perStructure: true },
@@ -1189,7 +1190,7 @@ export default function EstimatorTabs() {
             type: "checkbox-multiple",
             options: ["Concrete footings (42\" deep CO)", "Helical piers (engineered)", "Pier footings", "Other"],
             required: false,
-            category: "Foundation Planning",
+            category: "Foundation & Columns",
             allowOther: true,
             perStructure: true,
           },
@@ -1201,7 +1202,7 @@ export default function EstimatorTabs() {
             type: "select-with-other",
             options: ["KDPT #2", "Tru Joist #1", "LVL", "Steel"],
             required: true,
-            category: "Framing Design",
+            category: "Framing",
             allowOther: true,
             perStructure: true,
           },
@@ -1211,7 +1212,7 @@ export default function EstimatorTabs() {
             type: "select-with-other",
             options: ["2x8 (standard)", "2x10 (longer spans)", "2x12 (heavy duty)"],
             required: true,
-            category: "Framing Design",
+            category: "Framing",
             allowOther: true,
             perStructure: true,
           },
@@ -1221,7 +1222,7 @@ export default function EstimatorTabs() {
             type: "select",
             options: ["Parallel to house", "Perpendicular to house", "45-degree angle"],
             required: true,
-            category: "Framing Design",
+            category: "Framing",
             perStructure: true,
           },
           {
@@ -1230,7 +1231,7 @@ export default function EstimatorTabs() {
             type: "number",
             unit: "ft",
             required: true,
-            category: "Framing Design",
+            category: "Framing",
             perStructure: true,
           },
           {
@@ -1239,7 +1240,7 @@ export default function EstimatorTabs() {
             type: "select",
             options: ['12" OC', '16" OC', '24" OC'],
             required: true,
-            category: "Framing Design",
+            category: "Framing",
             perStructure: true,
           },
           // BEAM CONFIGURATION SECTION
@@ -1315,7 +1316,7 @@ export default function EstimatorTabs() {
             id: "blocking_needed",
             question: "Blocking needed between joists?",
             type: "checkbox",
-            category: "Framing Details",
+            category: "Framing",
             perStructure: true,
           },
           {
@@ -1323,7 +1324,7 @@ export default function EstimatorTabs() {
             question: "Blocking spacing",
             type: "select",
             options: ["Mid-span (one row)", "Every 4 feet", "Every 6 feet", "Every 8 feet"],
-            category: "Framing Details",
+            category: "Framing",
             dependency: "blocking_needed",
             dependencyValue: true,
             perStructure: true,
@@ -1333,7 +1334,7 @@ export default function EstimatorTabs() {
             question: "Blocking material",
             type: "select-with-other",
             options: ["Same as joist size", "2x6", "2x8", "2x10"],
-            category: "Framing Details",
+            category: "Framing",
             dependency: "blocking_needed",
             dependencyValue: true,
             allowOther: true,
@@ -1345,7 +1346,7 @@ export default function EstimatorTabs() {
             question: "Total number of columns needed",
             type: "number",
             required: true,
-            category: "Column Planning",
+            category: "Foundation & Columns",
             perStructure: true,
           },
           {
@@ -1354,7 +1355,7 @@ export default function EstimatorTabs() {
             type: "select-with-other",
             options: ["8 feet", "9 feet", "10 feet", "11 feet", "12 feet", "Custom height"],
             required: true,
-            category: "Column Planning",
+            category: "Foundation & Columns",
             allowOther: true,
             perStructure: true,
           },
@@ -1364,7 +1365,7 @@ export default function EstimatorTabs() {
             type: "select-with-other",
             options: ["4x4", "4x6", "6x6", "8x8", "10x10", "12x12"],
             required: true,
-            category: "Column Planning",
+            category: "Foundation & Columns",
             allowOther: true,
             perStructure: true,
           },
@@ -1374,7 +1375,7 @@ export default function EstimatorTabs() {
             type: "select-with-other",
             options: ["Douglas Fir (Rough)", "Douglas Fir (Smooth)", "Cedar (Rough)", "Cedar (Smooth)", "Steel"],
             required: true,
-            category: "Column Planning",
+            category: "Foundation & Columns",
             allowOther: true,
             perStructure: true,
           },
@@ -1383,7 +1384,7 @@ export default function EstimatorTabs() {
             id: "sway_braces_needed",
             question: "Sway braces needed",
             type: "checkbox",
-            category: "Deck Support",
+            category: "Decking",
             perStructure: true,
           },
           {
@@ -1391,7 +1392,7 @@ export default function EstimatorTabs() {
             question: "Sway brace total linear feet",
             type: "number",
             unit: "linear ft",
-            category: "Deck Support",
+            category: "Decking",
             dependency: "sway_braces_needed",
             dependencyValue: true,
             perStructure: true,
@@ -1401,7 +1402,7 @@ export default function EstimatorTabs() {
             question: "Sway brace material",
             type: "select-with-other",
             options: ["4x4", "4x6", "6x6", "8x8", "10x10", "12x12", "2x8 PT", "2x10 PT", "Steel cable", "Metal brackets"],
-            category: "Deck Support",
+            category: "Decking",
             dependency: "sway_braces_needed",
             dependencyValue: true,
             allowOther: true,
@@ -1411,31 +1412,40 @@ export default function EstimatorTabs() {
             id: "sway_brace_quantity",
             question: "Number of sway braces",
             type: "number",
-            category: "Deck Support",
+            category: "Decking",
             dependency: "sway_braces_needed",
-            dependencyValue: true,
-            perStructure: true,
-          },
-          // JOIST TAPE SYSTEM
-          {
-            id: "joist_tape_needed",
-            question: "Joist tape system",
-            type: "checkbox",
-            category: "Protection Systems",
-            perStructure: true,
-          },
-          {
-            id: "joist_tape_size",
-            question: "Joist tape size",
-            type: "select",
-            options: ["2\"", "4\"", "6\"", "9\"", "12\""],
-            category: "Protection Systems",
-            dependency: "joist_tape_needed",
             dependencyValue: true,
             perStructure: true,
           },
 
           // ===== DECKING QUESTIONS =====
+          {
+            id: "picture_frame_border",
+            question: "Picture frame border",
+            type: "select-with-other",
+            options: ["No picture frame", "Single board", "Double board", "Triple board"],
+            category: "Decking",
+            allowOther: true,
+            perStructure: true,
+          },
+          {
+            id: "decking_board_layout",
+            question: "Decking board layout",
+            type: "select-with-other",
+            options: [
+              "Horizontal (parallel to house)",
+              "Perpendicular (to house)",
+              "Diagonal (45-degree angle)",
+              "Herringbone",
+              "Chevron",
+              "Parquet",
+              "Picture frame with diagonal",
+              "Multi-directional"
+            ],
+            category: "Decking",
+            allowOther: true,
+            perStructure: true,
+          },
           {
             id: "decking_material",
             question: "Decking material preference",
@@ -1451,48 +1461,56 @@ export default function EstimatorTabs() {
               "Stone/Tile Deck Surface",
               "Porcelain Tile"
             ],
-            category: "Decking Material",
+            category: "Decking",
             allowOther: true,
             perStructure: true,
           },
           {
-            id: "picture_frame_border",
-            question: "Picture frame border",
+            id: "decking_color",
+            question: "Decking color",
             type: "select-with-other",
-            options: ["No picture frame", "Single board", "Double board", "Triple board"],
-            category: "Decking Design",
+            options: [
+              "Natural wood tone",
+              "Gray",
+              "Brown",
+              "Tan",
+              "Red/Mahogany",
+              "Dark brown/Espresso",
+              "Black",
+              "Multi-tone/Variegated"
+            ],
+            category: "Decking",
+            dependency: "decking_material",
+            dependencyValue: ["Deckorators Voyage (Surestone Technology)", "Deckorators Vault (Mineral-Based)", "Deckorators Vista (Tropical Look)", "Deckorators Trailhead (Cost-Effective)", "Composite (Other Brand)"],
             allowOther: true,
-            perStructure: true,
-          },
-          {
-            id: "multi_board_width",
-            question: "Multi board width design",
-            type: "checkbox",
-            category: "Decking Design",
             perStructure: true,
           },
 
-          // ===== RAILING QUESTIONS (New Build specific) =====
+          // ===== FASCIA =====
           {
-            id: "railing_height",
-            question: "Railing height",
+            id: "fascia_size",
+            question: "Fascia size",
             type: "select-with-other",
-            options: ["36 inches (standard)", "42 inches (high deck)"],
-            category: "Railings",
-            dependency: "does_deck_have_railings",
-            dependencyValue: true,
+            options: ["12 inch", "10 inch", "8 inch", "6 inch"],
+            category: "Fascia",
             allowOther: true,
             perStructure: true,
           },
           {
-            id: "railing_attachment_method",
-            question: "Railing attachment method",
+            id: "fascia_color",
+            question: "What color is the fascia?",
             type: "select-with-other",
-            options: ["Surface mount", "Side mount"],
-            category: "Railings",
-            dependency: "does_deck_have_railings",
-            dependencyValue: true,
+            options: ["Match deck color", "White", "Black", "Brown", "Gray", "Natural wood", "Custom color"],
+            category: "Fascia",
             allowOther: true,
+            perStructure: true,
+          },
+          {
+            id: "fascia_linear_feet",
+            question: "Fascia linear feet",
+            type: "number",
+            unit: "linear ft",
+            category: "Fascia",
             perStructure: true,
           },
 
@@ -1545,6 +1563,25 @@ export default function EstimatorTabs() {
             options: ["Yes", "No"],
             category: "Stairs",
             dependency: "deck_has_stairs",
+            dependencyValue: true,
+            perStructure: true,
+          },
+
+          // ===== PROTECTION SYSTEMS =====
+          {
+            id: "joist_tape_needed",
+            question: "Joist tape system",
+            type: "checkbox",
+            category: "Protection Systems",
+            perStructure: true,
+          },
+          {
+            id: "joist_tape_size",
+            question: "Joist tape size",
+            type: "select",
+            options: ["2\"", "4\"", "6\"", "9\"", "12\""],
+            category: "Protection Systems",
+            dependency: "joist_tape_needed",
             dependencyValue: true,
             perStructure: true,
           },
@@ -3066,6 +3103,60 @@ const emailEstimate = (jobRecord: any) => {
   const emailBody = generateEstimateBody(jobRecord);
   const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
   window.open(mailtoLink);
+};
+
+// Generate customer-friendly estimate summary
+const generateCustomerEstimate = (jobRecord: any, totalEstimate: number) => {
+  return `
+Hi ${jobRecord.customerName?.split(' ')[0] || 'there'},
+
+Thank you for your interest in Deck Doctor! Here's your estimate for the project we discussed:
+
+PROJECT: ${jobRecord.jobTypes.join(', ')}
+ADDRESS: ${jobRecord.projectAddress || jobRecord.customerAddress || 'As discussed'}
+ESTIMATED TOTAL: $${totalEstimate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+This estimate includes:
+• All materials and labor
+• Professional installation
+• Cleanup and debris removal
+${jobRecord.permitRequired ? '• Building permit fees\n' : ''}
+This estimate is valid for 30 days. Please let us know if you have any questions or would like to schedule the work.
+
+Best regards,
+${jobRecord.estimatorName || 'Deck Doctor Team'}
+Deck Doctor Colorado
+
+---
+To schedule or ask questions:
+📞 Call/Text: (Your phone here)
+📧 Email: info@deckdoctorco.com
+  `.trim();
+};
+
+// Email estimate directly to customer
+const emailToCustomer = (jobRecord: any, totalEstimate: number) => {
+  if (!jobRecord.customerEmail) {
+    alert('Customer email is required to send directly to customer.');
+    return;
+  }
+  const subject = `Your Deck Doctor Estimate - ${jobRecord.jobTypes.join(', ')}`;
+  const emailBody = generateCustomerEstimate(jobRecord, totalEstimate);
+  const mailtoLink = `mailto:${encodeURIComponent(jobRecord.customerEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+  window.open(mailtoLink);
+};
+
+// Text/SMS estimate to customer
+const textEstimateToCustomer = (jobRecord: any, totalEstimate: number) => {
+  if (!jobRecord.customerPhone) {
+    alert('Customer phone is required to send a text message.');
+    return;
+  }
+  // Clean phone number - remove non-digits
+  const cleanPhone = jobRecord.customerPhone.replace(/\D/g, '');
+  const smsBody = `Hi ${jobRecord.customerName?.split(' ')[0] || 'there'}! Your Deck Doctor estimate for ${jobRecord.jobTypes.join(', ')} is $${totalEstimate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Reply or call to discuss. - ${jobRecord.estimatorName || 'Deck Doctor'}`;
+  const smsLink = `sms:${cleanPhone}?body=${encodeURIComponent(smsBody)}`;
+  window.open(smsLink);
 };
 
 const showEstimatePreview = () => {
@@ -5411,7 +5502,43 @@ return (
           className="px-5 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl hover:from-blue-600 hover:to-cyan-700 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5"
         >
           <User className="w-5 h-5" />
-          Email Estimate
+          Email to Office
+        </button>
+        <button
+          onClick={() => {
+            const jobRecord = {
+              ...jobData,
+              files: uploadedFiles,
+              permitRequirements: getPermitRequirements(),
+              coloradoCodes: COLORADO_CODES,
+              estimatorVersion: "3.0.0",
+              exportedAt: new Date().toISOString(),
+            };
+            const total = costEstimate?.totalEstimate || 0;
+            emailToCustomer(jobRecord, total);
+          }}
+          className="px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-green-500/30 hover:-translate-y-0.5"
+        >
+          <Mail className="w-5 h-5" />
+          Email Customer
+        </button>
+        <button
+          onClick={() => {
+            const jobRecord = {
+              ...jobData,
+              files: uploadedFiles,
+              permitRequirements: getPermitRequirements(),
+              coloradoCodes: COLORADO_CODES,
+              estimatorVersion: "3.0.0",
+              exportedAt: new Date().toISOString(),
+            };
+            const total = costEstimate?.totalEstimate || 0;
+            textEstimateToCustomer(jobRecord, total);
+          }}
+          className="px-5 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl hover:from-teal-600 hover:to-cyan-700 font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-teal-500/30 hover:-translate-y-0.5"
+        >
+          <MessageSquare className="w-5 h-5" />
+          Text Customer
         </button>
         <button
           onClick={exportMaterialsList}
@@ -5451,7 +5578,7 @@ return (
           <Calculator className="w-5 h-5 mr-2" />
           Mobile Access & Integrations
         </h2>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-4 gap-6">
           <div className="bg-white p-4 rounded-lg shadow-sm border">
             <h3 className="font-bold text-blue-800 mb-2 flex items-center">
               📱 iPad Access
@@ -5484,17 +5611,32 @@ return (
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm border">
             <h3 className="font-bold text-blue-800 mb-2 flex items-center">
-              📧 Email Export
+              📧 Email & Text
             </h3>
             <p className="text-sm text-gray-700 mb-2">
               <strong>Instant estimate sharing:</strong>
             </p>
             <ul className="text-xs text-gray-600 space-y-1">
-              <li>• Email complete estimates</li>
-              <li>• Include all measurements & notes</li>
+              <li>• Email to office or customer</li>
+              <li>• Text estimates to customers</li>
               <li>• Materials lists attached</li>
               <li>• Customer & project details</li>
-              <li>• Works on iPad email app</li>
+              <li>• Works on iPad email/SMS app</li>
+            </ul>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow-sm border">
+            <h3 className="font-bold text-purple-800 mb-2 flex items-center">
+              🎯 Competitive Tracker
+            </h3>
+            <p className="text-sm text-gray-700 mb-2">
+              <strong>Track your performance:</strong>
+            </p>
+            <ul className="text-xs text-gray-600 space-y-1">
+              <li>• Log won/lost bids</li>
+              <li>• Track competitor pricing</li>
+              <li>• Win rate analytics</li>
+              <li>• Loss reason tracking</li>
+              <li><a href="/tracker" className="text-purple-600 underline hover:text-purple-800 font-medium">Open Tracker →</a></li>
             </ul>
           </div>
         </div>
