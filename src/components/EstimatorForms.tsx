@@ -3835,108 +3835,346 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
           ? `${jobType}_structure_${structureNumber}_${qId}`
           : `${jobType}_${qId}`;
 
-        // Real-time calculated materials list
-        const matListAnswers = jobData.jobSpecificAnswers;
-        const deckDims = matListAnswers[getMatFieldKey('main_deck_dimensions')];
-        const matDeckingMaterial = matListAnswers[getMatFieldKey('decking_material')] || "Composite";
-        const matRailingMaterial = matListAnswers[getMatFieldKey('railing_material')] || "Composite";
-        const matLevelRailing = parseFloat(matListAnswers[getMatFieldKey('total_level_railing_linear_ft')] || "0");
-        const matStairRailing = parseFloat(matListAnswers[getMatFieldKey('total_stair_railing_linear_ft')] || "0");
-        const matNumSteps = parseInt(matListAnswers[getMatFieldKey('number_of_steps')] || "0");
-        const matStringerLen = parseFloat(matListAnswers[getMatFieldKey('stringer_length')] || "0");
-        const matNumStringers = matListAnswers[getMatFieldKey('number_of_stringers')];
-        const matHardwareList = matListAnswers[getMatFieldKey('hardware_selection')] || {};
+        // Also check non-structure prefixed keys for hardware (which isn't per-structure)
+        const getGlobalFieldKey = (qId: string) => `${jobType}_${qId}`;
 
-        // Calculate square footage
-        let matTotalSqFt = 0;
+        // Real-time calculated materials list - read ALL relevant fields
+        const ans = jobData.jobSpecificAnswers;
+
+        // === BASIC DIMENSIONS ===
+        const deckDims = ans[getMatFieldKey('main_deck_dimensions')];
+        const deckHeight = parseFloat(ans[getMatFieldKey('deck_height_from_ground')] || "0");
+
+        // === DECKING ===
+        const deckingMaterial = ans[getMatFieldKey('decking_material')] || ans[getMatFieldKey('ra_recommended_decking')] || "Composite";
+        const deckingColor = ans[getMatFieldKey('decking_color')] || "";
+        const pictureFrame = ans[getMatFieldKey('picture_frame_border')] || "No picture frame";
+        const deckingLayout = ans[getMatFieldKey('decking_board_layout')] || "Horizontal";
+
+        // === FRAMING ===
+        const framingMaterial = ans[getMatFieldKey('framing_material')] || "KDPT #2";
+        const joistSize = ans[getMatFieldKey('joist_size')] || "2x8 (standard)";
+        const joistSpacing = ans[getMatFieldKey('joist_spacing')] || '16" OC';
+        const headerLength = parseFloat(ans[getMatFieldKey('header_length')] || "0");
+        const blockingNeeded = ans[getMatFieldKey('blocking_needed')];
+        const blockingMaterial = ans[getMatFieldKey('blocking_material')] || "Same as joist size";
+
+        // === BEAMS ===
+        const beamSize = ans[getMatFieldKey('beam_size')] || "Double 2x10";
+        const beamLinearFeet = parseFloat(ans[getMatFieldKey('beam_linear_feet')] || "0");
+        const secondBeamLinearFeet = parseFloat(ans[getMatFieldKey('second_beam_linear_feet')] || "0");
+
+        // === COLUMNS & FOOTINGS ===
+        const totalColumns = parseInt(ans[getMatFieldKey('total_columns_needed')] || "0");
+        const columnHeight = ans[getMatFieldKey('column_height')] || "8 feet";
+        const columnSize = ans[getMatFieldKey('column_size')] || "6x6";
+        const columnMaterial = ans[getMatFieldKey('column_material')] || "Douglas Fir";
+        const foundationType = ans[getMatFieldKey('foundation_type')];
+
+        // === FASCIA ===
+        const fasciaLinearFeet = parseFloat(ans[getMatFieldKey('fascia_linear_feet')] || "0");
+        const fasciaSize = ans[getMatFieldKey('fascia_size')] || "12 inch";
+        const fasciaColor = ans[getMatFieldKey('fascia_color')] || "Match deck color";
+
+        // === RAILINGS ===
+        const hasRailings = ans[getMatFieldKey('does_deck_have_railings')];
+        const railingMaterial = ans[getMatFieldKey('railing_material')] || "Composite";
+        const railingHeight = ans[getMatFieldKey('railing_height')] || "36 inches (standard)";
+        const levelRailingLF = parseFloat(ans[getMatFieldKey('total_level_railing_linear_ft')] || "0");
+        const stairRailingLF = parseFloat(ans[getMatFieldKey('total_stair_railing_linear_ft')] || "0");
+        const railingPowderCoating = ans[getMatFieldKey('railing_powder_coating')];
+        const railingPowderCoatingColor = ans[getMatFieldKey('railing_powder_coating_color')] || "";
+
+        // === STAIRS ===
+        const hasStairs = ans[getMatFieldKey('deck_has_stairs')];
+        const numSteps = parseInt(ans[getMatFieldKey('number_of_steps')] || "0");
+        const stringerLength = parseFloat(ans[getMatFieldKey('stringer_length')] || "0");
+        const numStringersRaw = ans[getMatFieldKey('number_of_stringers')] || "3";
+        const numStringers = parseInt(numStringersRaw.charAt(0)) || 3;
+        const stairTreadMaterial = ans[getMatFieldKey('stair_tread_material')] || "Same as deck";
+        const stairTreadBoards = ans[getMatFieldKey('stair_tread_boards')] || "Two boards";
+        const hasRisers = ans[getMatFieldKey('stairs_have_risers')];
+        const stringerMaterial = ans[getMatFieldKey('stair_stringer_material')] || "Pressure Treated Pine";
+        const landingsNeeded = ans[getMatFieldKey('landings_needed')];
+        const numLandings = parseInt(ans[getMatFieldKey('number_of_landings')] || "0");
+        const landingDims = ans[getMatFieldKey('landing_dimensions')];
+
+        // === PROTECTION SYSTEMS ===
+        const joistTapeNeeded = ans[getMatFieldKey('joist_tape_needed')];
+        const joistTapeSize = ans[getMatFieldKey('joist_tape_size')] || '4"';
+
+        // === SWAY BRACES ===
+        const swayBracesNeeded = ans[getMatFieldKey('sway_braces_needed')];
+        const swayBraceSize = parseFloat(ans[getMatFieldKey('sway_brace_size')] || "0");
+        const swayBraceMaterial = ans[getMatFieldKey('sway_brace_material')] || "2x8 PT";
+        const swayBraceQuantity = parseInt(ans[getMatFieldKey('sway_brace_quantity')] || "0");
+
+        // === HARDWARE (not per-structure) ===
+        const hardwareList = ans[getGlobalFieldKey('hardware_selection')] || {};
+
+        // Calculate square footage from dimensions
+        let totalSqFt = 0;
         if (deckDims && Array.isArray(deckDims)) {
-          matTotalSqFt = deckDims.reduce((total: number, dim: any) => {
+          totalSqFt = deckDims.reduce((total: number, dim: any) => {
             return total + (parseFloat(dim.length || 0) * parseFloat(dim.width || 0));
           }, 0);
         }
 
-        // Calculate materials
-        const matList: Array<{category: string, item: string, quantity: number, unit: string}> = [];
-
-        if (matTotalSqFt > 0) {
-          // Decking
-          const deckingLF = Math.ceil(matTotalSqFt * 2.2);
-          matList.push({ category: "Decking", item: `${matDeckingMaterial} Decking 5/4x6`, quantity: deckingLF, unit: "linear ft" });
-
-          // Framing
-          const joistCount = Math.ceil(matTotalSqFt / 16) + 2; // Approx 16" OC
-          matList.push({ category: "Framing", item: "2x8 Pressure Treated Joists", quantity: joistCount * 12, unit: "linear ft" });
-          matList.push({ category: "Framing", item: "2x10 Beam Material", quantity: Math.ceil(Math.sqrt(matTotalSqFt) * 2), unit: "linear ft" });
-          matList.push({ category: "Framing", item: "Ledger Board 2x10", quantity: Math.ceil(Math.sqrt(matTotalSqFt)), unit: "linear ft" });
-
-          // Posts & Footings
-          const postCount = Math.ceil(matTotalSqFt / 64) + 2;
-          matList.push({ category: "Posts", item: "6x6 Posts", quantity: postCount, unit: "each (8ft)" });
-          matList.push({ category: "Concrete", item: "Concrete Footings", quantity: postCount, unit: "each" });
+        // Calculate landing square footage
+        let landingSqFt = 0;
+        if (landingDims && Array.isArray(landingDims)) {
+          landingSqFt = landingDims.reduce((total: number, dim: any) => {
+            return total + (parseFloat(dim.length || 0) * parseFloat(dim.width || 0));
+          }, 0);
         }
 
-        // Railings
-        if (matLevelRailing > 0) {
-          matList.push({ category: "Railings", item: `${matRailingMaterial} Level Railing`, quantity: Math.ceil(matLevelRailing), unit: "linear ft" });
-        }
-        if (matStairRailing > 0) {
-          matList.push({ category: "Railings", item: `${matRailingMaterial} Stair Railing`, quantity: Math.ceil(matStairRailing), unit: "linear ft" });
+        // Parse joist spacing for calculations
+        const joistSpacingNum = joistSpacing === '12" OC' ? 12 : joistSpacing === '24" OC' ? 24 : 16;
+
+        // Build comprehensive materials list
+        const matList: Array<{category: string, item: string, quantity: number | string, unit: string, notes?: string}> = [];
+
+        // ========== FOUNDATION & CONCRETE ==========
+        if (totalColumns > 0) {
+          const footingType = Array.isArray(foundationType) ? foundationType[0] : foundationType || "Concrete footings";
+          matList.push({ category: "Foundation", item: footingType, quantity: totalColumns, unit: "each", notes: "42\" deep for Colorado" });
+          matList.push({ category: "Foundation", item: "Sonotube forms (if needed)", quantity: totalColumns, unit: "each" });
+          matList.push({ category: "Foundation", item: "Concrete (80lb bags)", quantity: totalColumns * 4, unit: "bags", notes: "~4 bags per footing" });
+          matList.push({ category: "Foundation", item: "Rebar #4", quantity: totalColumns * 2, unit: "pieces", notes: "2 per footing" });
+        } else if (totalSqFt > 0) {
+          // Estimate footings based on deck size
+          const estFootings = Math.ceil(totalSqFt / 64) + 2;
+          matList.push({ category: "Foundation", item: "Concrete Footings", quantity: estFootings, unit: "each" });
+          matList.push({ category: "Foundation", item: "Concrete (80lb bags)", quantity: estFootings * 4, unit: "bags" });
         }
 
-        // Stairs
-        if (matNumSteps > 0) {
-          const stringerCount = matNumStringers ? parseInt(matNumStringers.charAt(0)) : 3;
-          matList.push({ category: "Stairs", item: "Stair Treads", quantity: matNumSteps * 2, unit: "boards" });
-          if (matStringerLen > 0) {
-            matList.push({ category: "Stairs", item: `Stringers (${matStringerLen} ft each)`, quantity: stringerCount, unit: "each" });
+        // ========== COLUMNS / POSTS ==========
+        if (totalColumns > 0) {
+          const colHeightNum = parseFloat(columnHeight) || 8;
+          matList.push({ category: "Columns", item: `${columnSize} ${columnMaterial} Posts`, quantity: totalColumns, unit: `each (${colHeightNum}ft)` });
+          matList.push({ category: "Columns", item: "Post bases (Simpson)", quantity: totalColumns, unit: "each" });
+          matList.push({ category: "Columns", item: "Post caps (Simpson)", quantity: totalColumns, unit: "each" });
+        }
+
+        // ========== BEAMS ==========
+        if (beamLinearFeet > 0) {
+          matList.push({ category: "Beams", item: `${beamSize} Beam`, quantity: Math.ceil(beamLinearFeet), unit: "linear ft" });
+        }
+        if (secondBeamLinearFeet > 0) {
+          matList.push({ category: "Beams", item: `${beamSize} Secondary Beam`, quantity: Math.ceil(secondBeamLinearFeet), unit: "linear ft" });
+        }
+        if (beamLinearFeet === 0 && totalSqFt > 0) {
+          // Estimate beam if not specified
+          const estBeamLF = Math.ceil(Math.sqrt(totalSqFt) * 1.5);
+          matList.push({ category: "Beams", item: "Beam Material (estimated)", quantity: estBeamLF, unit: "linear ft" });
+        }
+
+        // ========== FRAMING ==========
+        if (totalSqFt > 0) {
+          // Ledger board
+          if (headerLength > 0) {
+            matList.push({ category: "Framing", item: `Ledger Board (${joistSize.split(' ')[0]})`, quantity: Math.ceil(headerLength), unit: "linear ft" });
+          } else {
+            const estLedger = Math.ceil(Math.sqrt(totalSqFt));
+            matList.push({ category: "Framing", item: `Ledger Board (estimated)`, quantity: estLedger, unit: "linear ft" });
+          }
+
+          // Rim joists
+          const perimeter = Math.ceil(Math.sqrt(totalSqFt) * 4);
+          matList.push({ category: "Framing", item: `Rim Joists (${joistSize.split(' ')[0]})`, quantity: perimeter, unit: "linear ft" });
+
+          // Calculate joists based on spacing
+          const deckWidth = Math.sqrt(totalSqFt); // Approximate
+          const joistCount = Math.ceil((deckWidth * 12) / joistSpacingNum) + 1;
+          const joistLength = Math.sqrt(totalSqFt); // Approximate joist length
+          const totalJoistLF = Math.ceil(joistCount * joistLength);
+          matList.push({ category: "Framing", item: `${joistSize.split(' ')[0]} ${framingMaterial} Joists @ ${joistSpacing}`, quantity: totalJoistLF, unit: "linear ft", notes: `~${joistCount} joists` });
+
+          // Blocking
+          if (blockingNeeded) {
+            const blockingLF = Math.ceil(deckWidth * 2); // Estimate mid-span blocking
+            matList.push({ category: "Framing", item: `Blocking (${blockingMaterial})`, quantity: blockingLF, unit: "linear ft" });
+          }
+
+          // Joist hangers
+          matList.push({ category: "Framing", item: "Joist Hangers", quantity: joistCount, unit: "each" });
+        }
+
+        // ========== DECKING ==========
+        if (totalSqFt > 0) {
+          // Decking boards - typically 2.2 LF per sq ft for 5.5" wide boards
+          const deckingLF = Math.ceil(totalSqFt * 2.2);
+          const deckingDesc = deckingColor ? `${deckingMaterial} - ${deckingColor}` : deckingMaterial;
+          matList.push({ category: "Decking", item: `${deckingDesc} Decking`, quantity: deckingLF, unit: "linear ft", notes: deckingLayout });
+
+          // Picture frame border
+          if (pictureFrame && pictureFrame !== "No picture frame") {
+            const borderLF = Math.ceil(Math.sqrt(totalSqFt) * 4);
+            const borderMultiplier = pictureFrame === "Double board" ? 2 : pictureFrame === "Triple board" ? 3 : 1;
+            matList.push({ category: "Decking", item: `Picture Frame Border (${pictureFrame})`, quantity: borderLF * borderMultiplier, unit: "linear ft" });
+          }
+
+          // Deck screws
+          const screwBoxes = Math.ceil(totalSqFt / 100); // ~1 box per 100 sq ft
+          matList.push({ category: "Decking", item: "Deck Screws (350ct box)", quantity: screwBoxes, unit: "boxes" });
+        }
+
+        // ========== FASCIA ==========
+        if (fasciaLinearFeet > 0) {
+          matList.push({ category: "Fascia", item: `${fasciaSize} Fascia Board (${fasciaColor})`, quantity: Math.ceil(fasciaLinearFeet), unit: "linear ft" });
+        } else if (totalSqFt > 0) {
+          // Estimate fascia from deck perimeter
+          const estFascia = Math.ceil(Math.sqrt(totalSqFt) * 4);
+          matList.push({ category: "Fascia", item: "Fascia Board (estimated)", quantity: estFascia, unit: "linear ft" });
+        }
+
+        // ========== RAILINGS ==========
+        const totalRailingLF = levelRailingLF + stairRailingLF;
+        if (totalRailingLF > 0 || (hasRailings && (Array.isArray(hasRailings) ? hasRailings.includes("Yes") : hasRailings))) {
+          const railingLF = totalRailingLF > 0 ? totalRailingLF : Math.ceil(Math.sqrt(totalSqFt) * 3);
+          const railingDesc = railingPowderCoating ? `${railingMaterial} (${railingPowderCoatingColor} powder coat)` : railingMaterial;
+
+          if (levelRailingLF > 0) {
+            matList.push({ category: "Railings", item: `Level Railing - ${railingDesc}`, quantity: Math.ceil(levelRailingLF), unit: "linear ft", notes: railingHeight });
+          }
+          if (stairRailingLF > 0) {
+            matList.push({ category: "Railings", item: `Stair Railing - ${railingDesc}`, quantity: Math.ceil(stairRailingLF), unit: "linear ft" });
+          }
+          if (levelRailingLF === 0 && stairRailingLF === 0 && railingLF > 0) {
+            matList.push({ category: "Railings", item: `Railing - ${railingDesc}`, quantity: Math.ceil(railingLF), unit: "linear ft" });
+          }
+
+          // Railing posts (every 6 ft)
+          const railingPosts = Math.ceil(railingLF / 6) + 1;
+          matList.push({ category: "Railings", item: "Railing Posts", quantity: railingPosts, unit: "each" });
+
+          // Balusters (every 4 inches)
+          const balusters = Math.ceil(railingLF * 3); // ~3 per linear ft
+          matList.push({ category: "Railings", item: "Balusters/Spindles", quantity: balusters, unit: "each" });
+
+          // Top rail and bottom rail
+          matList.push({ category: "Railings", item: "Top Rail", quantity: Math.ceil(railingLF), unit: "linear ft" });
+          matList.push({ category: "Railings", item: "Bottom Rail", quantity: Math.ceil(railingLF), unit: "linear ft" });
+        }
+
+        // ========== STAIRS ==========
+        if (numSteps > 0 || (hasStairs && (Array.isArray(hasStairs) ? hasStairs.includes("Yes") : hasStairs))) {
+          const steps = numSteps > 0 ? numSteps : Math.ceil(deckHeight / 7.5);
+
+          if (steps > 0) {
+            // Treads
+            const treadsPerStep = stairTreadBoards === "One board" ? 1 : 2;
+            const treadMat = stairTreadMaterial === "Same as deck" ? deckingMaterial : stairTreadMaterial;
+            matList.push({ category: "Stairs", item: `Stair Treads (${treadMat})`, quantity: steps * treadsPerStep, unit: "boards", notes: `${steps} steps x ${treadsPerStep} boards` });
+
+            // Risers
+            if (hasRisers && (Array.isArray(hasRisers) ? hasRisers.includes("Yes") : hasRisers)) {
+              matList.push({ category: "Stairs", item: "Stair Risers", quantity: steps, unit: "boards" });
+            }
+
+            // Stringers
+            const strLen = stringerLength > 0 ? stringerLength : Math.ceil(Math.sqrt(Math.pow(deckHeight, 2) + Math.pow(steps * 10.5, 2)) / 12);
+            matList.push({ category: "Stairs", item: `Stringers (${stringerMaterial})`, quantity: numStringers, unit: `each (${strLen}ft)` });
+
+            // Stair brackets
+            matList.push({ category: "Stairs", item: "Stair Angles/Brackets", quantity: numStringers * 2, unit: "each" });
           }
         }
 
-        // Group by category
+        // Landings
+        if (landingSqFt > 0) {
+          const landingDeckingLF = Math.ceil(landingSqFt * 2.2);
+          matList.push({ category: "Stairs", item: "Landing Decking", quantity: landingDeckingLF, unit: "linear ft" });
+          matList.push({ category: "Stairs", item: "Landing Frame Material", quantity: Math.ceil(Math.sqrt(landingSqFt) * 4), unit: "linear ft" });
+        }
+
+        // ========== SWAY BRACES ==========
+        if (swayBracesNeeded && swayBraceQuantity > 0) {
+          matList.push({ category: "Bracing", item: `Sway Braces (${swayBraceMaterial})`, quantity: swayBraceQuantity, unit: "each" });
+          if (swayBraceSize > 0) {
+            matList.push({ category: "Bracing", item: `Sway Brace Material`, quantity: Math.ceil(swayBraceSize), unit: "linear ft" });
+          }
+        }
+
+        // ========== PROTECTION SYSTEMS ==========
+        if (joistTapeNeeded && totalSqFt > 0) {
+          // Joist tape for all joists
+          const joistCount = Math.ceil((Math.sqrt(totalSqFt) * 12) / joistSpacingNum) + 1;
+          const joistLength = Math.sqrt(totalSqFt);
+          const tapeLF = Math.ceil(joistCount * joistLength);
+          const tapeRolls = Math.ceil(tapeLF / 75); // ~75 ft per roll
+          matList.push({ category: "Protection", item: `Joist Tape (${joistTapeSize})`, quantity: tapeRolls, unit: "rolls", notes: `${tapeLF} LF total` });
+        }
+
+        // ========== HARDWARE (from checklist) ==========
+        const selectedHardware = Object.entries(hardwareList)
+          .filter(([_, hw]: [string, any]) => hw?.selected && hw?.quantity > 0)
+          .map(([_, hw]: [string, any]) => ({ name: hw.name, quantity: hw.quantity, unit: hw.unit }));
+
+        // Group materials by category
         const matGrouped: Record<string, typeof matList> = {};
         matList.forEach(m => {
           if (!matGrouped[m.category]) matGrouped[m.category] = [];
           matGrouped[m.category].push(m);
         });
 
-        // Hardware from checklist
-        const matSelectedHardware = Object.entries(matHardwareList)
-          .filter(([_, hw]: [string, any]) => hw?.selected && hw?.quantity > 0)
-          .map(([_, hw]: [string, any]) => ({ name: hw.name, quantity: hw.quantity, unit: hw.unit }));
+        // Category display order
+        const categoryOrder = ["Foundation", "Columns", "Beams", "Framing", "Decking", "Fascia", "Railings", "Stairs", "Bracing", "Protection"];
 
         return (
           <div className="space-y-4">
-            {matList.length === 0 && matSelectedHardware.length === 0 ? (
+            {matList.length === 0 && selectedHardware.length === 0 ? (
               <div className="p-6 bg-gray-100 rounded-lg text-center">
-                <p className="text-gray-600">Enter deck dimensions and other measurements above to generate the materials list.</p>
+                <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600 font-medium">Enter project details above to generate the materials list.</p>
+                <p className="text-gray-500 text-sm mt-2">Fill in dimensions, material selections, and measurements to see a complete materials breakdown.</p>
               </div>
             ) : (
               <>
-                {Object.entries(matGrouped).map(([category, items]) => (
-                  <div key={category} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-                      <h4 className="font-bold text-gray-800">{category}</h4>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                      {items.map((item, idx) => (
-                        <div key={idx} className="px-4 py-3 flex justify-between items-center">
-                          <span className="text-gray-700">{item.item}</span>
-                          <span className="font-bold text-gray-900">{item.quantity} {item.unit}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <h3 className="font-bold text-green-800 text-lg flex items-center">
+                    <Package className="w-5 h-5 mr-2" />
+                    Complete Materials List
+                  </h3>
+                  {totalSqFt > 0 && (
+                    <p className="text-green-700 text-sm mt-1">Based on {totalSqFt.toFixed(0)} sq ft deck area</p>
+                  )}
+                </div>
 
-                {matSelectedHardware.length > 0 && (
-                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="bg-amber-100 px-4 py-2 border-b border-amber-200">
+                {categoryOrder.map(category => {
+                  const items = matGrouped[category];
+                  if (!items || items.length === 0) return null;
+                  return (
+                    <div key={category} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                      <div className="bg-gradient-to-r from-gray-100 to-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h4 className="font-bold text-gray-800">{category}</h4>
+                      </div>
+                      <div className="divide-y divide-gray-100">
+                        {items.map((item, idx) => (
+                          <div key={idx} className="px-4 py-3 flex justify-between items-start hover:bg-gray-50">
+                            <div className="flex-1">
+                              <span className="text-gray-700 font-medium">{item.item}</span>
+                              {item.notes && (
+                                <p className="text-gray-500 text-xs mt-0.5">{item.notes}</p>
+                              )}
+                            </div>
+                            <span className="font-bold text-gray-900 ml-4 whitespace-nowrap">{item.quantity} {item.unit}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {selectedHardware.length > 0 && (
+                  <div className="bg-white border border-amber-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-amber-100 to-amber-50 px-4 py-3 border-b border-amber-200">
                       <h4 className="font-bold text-amber-800">Hardware</h4>
                     </div>
                     <div className="divide-y divide-gray-100">
-                      {matSelectedHardware.map((hw, idx) => (
-                        <div key={idx} className="px-4 py-3 flex justify-between items-center">
-                          <span className="text-gray-700">{hw.name}</span>
+                      {selectedHardware.map((hw, idx) => (
+                        <div key={idx} className="px-4 py-3 flex justify-between items-center hover:bg-gray-50">
+                          <span className="text-gray-700 font-medium">{hw.name}</span>
                           <span className="font-bold text-gray-900">{hw.quantity} {hw.unit}</span>
                         </div>
                       ))}
@@ -3944,9 +4182,9 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
                   </div>
                 )}
 
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-blue-800 text-sm">
-                    <strong>Note:</strong> This is an estimated materials list. Actual quantities may vary based on site conditions and final measurements. Always add 10% for waste.
+                    <strong>📋 Note:</strong> This is an estimated materials list based on your inputs. Actual quantities may vary based on site conditions, waste factor, and final measurements. <strong>Add 10% for waste on all lumber and decking materials.</strong>
                   </p>
                 </div>
               </>
