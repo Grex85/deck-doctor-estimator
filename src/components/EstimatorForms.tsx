@@ -777,46 +777,49 @@ const AddressAutocomplete = ({
   );
 };
 
+// Initial empty state for new estimates
+const initialJobData: JobData = {
+  jobTypes: [],
+  estimatorName: "",
+  visitDate: "",
+  gpsLat: 0,
+  gpsLng: 0,
+  cityCode: "",
+  liveLoad: 0,
+  snowLoad: 0,
+  customerName: "",
+  customerPhone: "",
+  customerEmail: "",
+  customerAddress: "",
+  projectAddress: "",
+  sameAsCustomerAddress: false,
+  permitRequired: false,
+  projectValue: 0,
+  customerGrade: "",
+  estimatorNotes: "",
+  jobSpecificAnswers: {},
+  generalNotes: "",
+  measurementNotes: "",
+  calculations: {},
+  // Customer-facing questions
+  newCustomer: true,
+  referralSource: "",
+  hasReferrals: false,
+  referralInfo: "",
+  needsSamples: false,
+  sampleTypes: "",
+  hasScheduleRequirements: false,
+  scheduleRequirements: "",
+  hasGateCode: false,
+  gateCode: "",
+  paintStainColors: "",
+  painInTheAssCharge: 0,
+  assignedCrew: "",
+};
+
 export default function EstimatorTabs() {
   // State
-  const [jobData, setJobData] = useState<JobData>({
-    jobTypes: [],
-    estimatorName: "",
-    visitDate: "",
-    gpsLat: 0,
-    gpsLng: 0,
-    cityCode: "",
-    liveLoad: 0,
-    snowLoad: 0,
-    customerName: "",
-    customerPhone: "",
-    customerEmail: "",
-    customerAddress: "",
-    projectAddress: "",
-    sameAsCustomerAddress: false,
-    permitRequired: false,
-    projectValue: 0,
-    customerGrade: "",
-    estimatorNotes: "",
-    jobSpecificAnswers: {},
-    generalNotes: "",
-    measurementNotes: "",
-    calculations: {},
-    // Customer-facing questions
-    newCustomer: true,
-    referralSource: "",
-    hasReferrals: false,
-    referralInfo: "",
-    needsSamples: false,
-    sampleTypes: "",
-    hasScheduleRequirements: false,
-    scheduleRequirements: "",
-    hasGateCode: false,
-    gateCode: "",
-    paintStainColors: "",
-    painInTheAssCharge: 0,
-    assignedCrew: "",
-  });
+  const [jobData, setJobData] = useState<JobData>({...initialJobData});
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -2382,8 +2385,11 @@ useEffect(() => {
 
       // Only offer to recover if draft is less than 24 hours old
       if (hoursSinceSave < 24) {
+        const customerInfo = draft.jobData?.customerName
+          ? ` for ${draft.jobData.customerName}`
+          : '';
         const shouldRecover = window.confirm(
-          `Found a draft saved ${formatTimeAgo(savedAt)}. Would you like to recover it?`
+          `Found a saved draft${customerInfo} from ${formatTimeAgo(savedAt)}.\n\nClick OK to continue that estimate.\nClick Cancel to start a NEW estimate.`
         );
 
         if (shouldRecover) {
@@ -2392,7 +2398,13 @@ useEffect(() => {
           setDrawings(draft.drawings || []);
           setLastSaved(savedAt);
         } else {
+          // User wants a new estimate - clear everything
           localStorage.removeItem('estimator_draft');
+          // Explicitly reset to initial state to ensure clean slate
+          setJobData({...initialJobData});
+          setUploadedFiles([]);
+          setDrawings([]);
+          setLastSaved(null);
         }
       } else {
         // Auto-delete old drafts
