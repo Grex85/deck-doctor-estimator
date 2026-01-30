@@ -3676,40 +3676,59 @@ const renderQuestion = (question: JobQuestion, jobType: string, structureNumber?
             </div>
           );
         } else if (question.id === "calculated_stair_railing_display") {
-          const stairRailing = jobData.jobSpecificAnswers[`${jobType}_total_stair_railing_linear_ft`];
-          if (stairRailing) {
+          // Calculate directly from deck height
+          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          const stairRailingAns = jobData.jobSpecificAnswers[`${jobType}_stairs_have_railings`];
+          const hasOneSideRail = Array.isArray(stairRailingAns) && stairRailingAns.includes("Yes - one side");
+          const hasBothSidesRail = Array.isArray(stairRailingAns) && stairRailingAns.includes("Yes - both sides");
+
+          if (deckHeightIn > 0 && (hasOneSideRail || hasBothSidesRail)) {
+            const treads = Math.ceil(deckHeightIn / 7.5);
+            const totalRun = treads * 10.5;
+            const railLen = Math.sqrt(Math.pow(deckHeightIn, 2) + Math.pow(totalRun, 2)) / 12;
+            const multiplier = hasBothSidesRail ? 2 : 1;
+            const totalRailing = Math.ceil(railLen * multiplier);
             return (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-amber-800 font-medium">
-                  Stair Railing: <span className="text-xl font-bold">{stairRailing} linear ft</span>
+                  Stair Railing: <span className="text-xl font-bold">{totalRailing} linear ft</span>
+                  <span className="text-sm ml-2">({hasBothSidesRail ? "both sides" : "one side"})</span>
                 </p>
-                <p className="text-amber-600 text-xs mt-1">Auto-calculated from deck height</p>
+                <p className="text-amber-600 text-xs mt-1">Auto-calculated from {deckHeightIn}" deck height</p>
               </div>
             );
           }
-          return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height to calculate stair railing</div>;
+          return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height and select stair railing option to calculate</div>;
         } else if (question.id === "calculated_treads_display") {
-          const numTreads = jobData.jobSpecificAnswers[`${jobType}_number_of_steps`];
-          if (numTreads) {
+          // Calculate directly from deck height
+          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          if (deckHeightIn > 0) {
+            const numTreads = Math.ceil(deckHeightIn / 7.5);
+            const riserHeight = (deckHeightIn / numTreads).toFixed(2);
             return (
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-green-800 font-medium">
                   Number of Treads: <span className="text-xl font-bold">{numTreads} steps</span>
+                  <span className="text-sm ml-2">({riserHeight}" rise each)</span>
                 </p>
-                <p className="text-green-600 text-xs mt-1">Auto-calculated from deck height (7.5" rise per step)</p>
+                <p className="text-green-600 text-xs mt-1">Auto-calculated from {deckHeightIn}" deck height</p>
               </div>
             );
           }
-          return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height to calculate treads</div>;
+          return <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm">Enter deck height to calculate number of treads</div>;
         } else if (question.id === "calculated_stringer_length_display") {
-          const stringerLength = jobData.jobSpecificAnswers[`${jobType}_stringer_length`];
-          if (stringerLength) {
+          // Calculate directly from deck height
+          const deckHeightIn = parseFloat(jobData.jobSpecificAnswers[`${jobType}_deck_height_from_ground`] || "0");
+          if (deckHeightIn > 0) {
+            const treads = Math.ceil(deckHeightIn / 7.5);
+            const totalRun = treads * 10.5;
+            const stringerLen = Math.ceil(Math.sqrt(Math.pow(deckHeightIn, 2) + Math.pow(totalRun, 2)) / 12 * 10) / 10;
             return (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-blue-800 font-medium">
-                  Stringer Length: <span className="text-xl font-bold">{stringerLength} ft</span> per stringer
+                  Stringer Length: <span className="text-xl font-bold">{stringerLen} ft</span> per stringer
                 </p>
-                <p className="text-blue-600 text-xs mt-1">Auto-calculated from deck height</p>
+                <p className="text-blue-600 text-xs mt-1">Auto-calculated from {deckHeightIn}" deck height ({(totalRun/12).toFixed(1)} ft run)</p>
               </div>
             );
           }
