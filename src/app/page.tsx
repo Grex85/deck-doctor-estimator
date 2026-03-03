@@ -1,21 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ClipboardList, Calculator, Camera, MapPin, FileText, ArrowRight, Target, TrendingUp } from "lucide-react";
+import Link from 'next/link';
+import {
+  ClipboardList,
+  Calculator,
+  Camera,
+  MapPin,
+  FileText,
+  ArrowRight,
+  Target,
+  TrendingUp,
+} from 'lucide-react';
 
 export default function HomePage() {
-  const router = useRouter();
-
-  // Auto-redirect to estimator after a brief delay (optional - remove if you want a landing page)
-  // useEffect(() => {
-  //   const timer = setTimeout(() => {
-  //     router.push('/estimator');
-  //   }, 100);
-  //   return () => clearTimeout(timer);
-  // }, [router]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Hero Section */}
@@ -38,7 +35,8 @@ export default function HomePage() {
             </h1>
 
             <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-10">
-              Professional field estimation tool for deck construction, repair, and renovation projects in Colorado.
+              Professional field estimation tool for deck construction, repair,
+              and renovation projects in Colorado.
             </p>
 
             {/* CTA Button */}
@@ -65,9 +63,12 @@ export default function HomePage() {
             <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
               <Calculator className="w-6 h-6 text-blue-400" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Smart Calculations</h3>
+            <h3 className="text-lg font-bold text-white mb-2">
+              Smart Calculations
+            </h3>
             <p className="text-slate-400 text-sm">
-              Automatic material calculations, labor estimates, and pricing based on your inputs.
+              Automatic material calculations, labor estimates, and pricing
+              based on your inputs.
             </p>
           </div>
 
@@ -76,9 +77,12 @@ export default function HomePage() {
             <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-4">
               <Camera className="w-6 h-6 text-green-400" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Photo Documentation</h3>
+            <h3 className="text-lg font-bold text-white mb-2">
+              Photo Documentation
+            </h3>
             <p className="text-slate-400 text-sm">
-              Capture and annotate site photos with professional drawing tools and measurements.
+              Capture and annotate site photos with professional drawing tools
+              and measurements.
             </p>
           </div>
 
@@ -87,9 +91,12 @@ export default function HomePage() {
             <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4">
               <MapPin className="w-6 h-6 text-amber-400" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">GPS & Location</h3>
+            <h3 className="text-lg font-bold text-white mb-2">
+              GPS & Location
+            </h3>
             <p className="text-slate-400 text-sm">
-              Auto-capture GPS coordinates and address lookup with Google Maps integration.
+              Auto-capture GPS coordinates and address lookup with Google Maps
+              integration.
             </p>
           </div>
 
@@ -98,9 +105,12 @@ export default function HomePage() {
             <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4">
               <FileText className="w-6 h-6 text-purple-400" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Instant Estimates</h3>
+            <h3 className="text-lg font-bold text-white mb-2">
+              Instant Estimates
+            </h3>
             <p className="text-slate-400 text-sm">
-              Generate professional estimates and send directly to the office via email or cloud sync.
+              Generate professional estimates and send directly to the office
+              via email or cloud sync.
             </p>
           </div>
 
@@ -109,9 +119,12 @@ export default function HomePage() {
             <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mb-4">
               <Target className="w-6 h-6 text-red-400" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Competitive Tracker</h3>
+            <h3 className="text-lg font-bold text-white mb-2">
+              Competitive Tracker
+            </h3>
             <p className="text-slate-400 text-sm">
-              Log won/lost bids, track competitor pricing, and analyze your win rate over time.
+              Log won/lost bids, track competitor pricing, and analyze your win
+              rate over time.
             </p>
           </div>
 
@@ -120,9 +133,12 @@ export default function HomePage() {
             <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center mb-4">
               <TrendingUp className="w-6 h-6 text-cyan-400" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Win Rate Analytics</h3>
+            <h3 className="text-lg font-bold text-white mb-2">
+              Win Rate Analytics
+            </h3>
             <p className="text-slate-400 text-sm">
-              See pricing insights, loss reasons, and performance data to adjust your rates strategically.
+              See pricing insights, loss reasons, and performance data to adjust
+              your rates strategically.
             </p>
           </div>
         </div>
@@ -131,9 +147,12 @@ export default function HomePage() {
       {/* Quick Start Section */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-8">
-          <h3 className="text-2xl font-bold text-white mb-4">Ready to Start?</h3>
+          <h3 className="text-2xl font-bold text-white mb-4">
+            Ready to Start?
+          </h3>
           <p className="text-slate-300 mb-6">
-            Click the button below to open the full estimator tool. All your data is automatically saved and can be synced to the office.
+            Click the button below to open the full estimator tool. All your
+            data is automatically saved and can be synced to the office.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link

@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { cn } from '@/lib/utils'
-import { Loader2 } from 'lucide-react'
+import * as React from 'react';
+import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'outline' | 'destructive' | 'ghost' | 'link'
-  size?: 'sm' | 'md' | 'lg' | 'icon'
-  isLoading?: boolean
+  variant?: 'default' | 'outline' | 'destructive' | 'ghost' | 'link';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
+  isLoading?: boolean;
 }
 
 const variantClasses = {
@@ -16,17 +16,27 @@ const variantClasses = {
   destructive: 'bg-red-600 text-white hover:bg-red-700',
   ghost: 'bg-transparent hover:bg-slate-100',
   link: 'underline text-blue-600 hover:text-blue-800',
-}
+};
 
 const sizeClasses = {
   sm: 'px-3 py-1 text-sm',
   md: 'px-4 py-2 text-base',
   lg: 'px-5 py-3 text-lg',
   icon: 'p-2',
-}
+};
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'default', size = 'md', isLoading = false, children, ...props }, ref) => {
+  (
+    {
+      className,
+      variant = 'default',
+      size = 'md',
+      isLoading = false,
+      children,
+      ...props
+    },
+    ref
+  ) => {
     return (
       <button
         className={cn(
@@ -42,8 +52,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {children}
       </button>
-    )
+    );
   }
-)
+);
 
-Button.displayName = 'Button'
+Button.displayName = 'Button';

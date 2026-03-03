@@ -1,18 +1,27 @@
-'use client'
+'use client';
 
-import React, { useRef, useEffect, useState } from 'react'
-import { Stage, Layer, Rect, Line, Text, Group, Circle, Arrow, Shape } from 'react-konva'
-import { Download, RefreshCw, ZoomIn, ZoomOut, Layers, Eye, Printer, FileImage } from 'lucide-react'
+import React, { useRef, useEffect, useState } from 'react';
+import {
+  Stage,
+  Layer,
+  Rect,
+  Line,
+  Text,
+  Group,
+  Circle,
+  Arrow,
+} from 'react-konva';
+import { Download, RefreshCw, ZoomIn, ZoomOut, Eye } from 'lucide-react';
 
 interface AutoDiagramCanvasProps {
-  jobData: any
-  onExport: (dataURL: string) => void
-  width?: number
-  height?: number
+  jobData: any;
+  onExport: (dataURL: string) => void;
+  width?: number;
+  height?: number;
 }
 
-const SCALE_FACTOR = 8 // pixels per foot
-const PADDING = 80
+const SCALE_FACTOR = 8; // pixels per foot
+const PADDING = 80;
 
 // Professional blueprint color scheme
 const COLORS = {
@@ -36,86 +45,107 @@ const COLORS = {
   legend: '#1F2937',
   title: '#0F172A',
   shadow: 'rgba(0,0,0,0.15)',
-}
+};
 
 export function AutoDiagramCanvas({
   jobData,
   onExport,
   width = 800,
-  height = 600
+  height = 600,
 }: AutoDiagramCanvasProps) {
-  const stageRef = useRef<any>(null)
-  const [scale, setScale] = useState(1)
-  const [diagram, setDiagram] = useState<any>(null)
-  const [viewMode, setViewMode] = useState<'plan' | 'elevation'>('plan')
-  const [showDetails, setShowDetails] = useState(true)
+  const stageRef = useRef<any>(null);
+  const [scale, setScale] = useState(1);
+  const [diagram, setDiagram] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'plan' | 'elevation'>('plan');
+  const [showDetails, setShowDetails] = useState(true);
 
   // Parse dimensions from job data
   const parseDimensions = () => {
-    const jobAnswers = jobData?.jobSpecificAnswers || {}
+    const jobAnswers = jobData?.jobSpecificAnswers || {};
 
-    let dimensions: { length: number; width: number }[] = []
-    let deckHeight = 0
-    let hasStairs = false
-    let hasRailing = false
-    let columnCount = 0
-    let railingLinearFt = 0
-    let deckingDirection = 'horizontal'
+    let dimensions: { length: number; width: number }[] = [];
+    let deckHeight = 0;
+    let hasStairs = false;
+    let hasRailing = false;
+    let columnCount = 0;
+    let railingLinearFt = 0;
+    const deckingDirection = 'horizontal';
 
-    Object.keys(jobAnswers).forEach(key => {
+    Object.keys(jobAnswers).forEach((key) => {
       if (key.includes('main_deck_dimensions')) {
-        const dims = jobAnswers[key]
+        const dims = jobAnswers[key];
         if (Array.isArray(dims)) {
-          dimensions = dims.map((d: any) => ({
-            length: parseFloat(d.length) || 0,
-            width: parseFloat(d.width) || 0
-          })).filter(d => d.length > 0 && d.width > 0)
+          dimensions = dims
+            .map((d: any) => ({
+              length: parseFloat(d.length) || 0,
+              width: parseFloat(d.width) || 0,
+            }))
+            .filter((d) => d.length > 0 && d.width > 0);
         }
       }
       if (key.includes('deck_height')) {
-        deckHeight = parseFloat(jobAnswers[key]) || 0
+        deckHeight = parseFloat(jobAnswers[key]) || 0;
       }
       if (key.includes('deck_has_stairs') || key.includes('stairs_needed')) {
         hasStairs = Array.isArray(jobAnswers[key])
           ? jobAnswers[key].includes('Yes')
-          : jobAnswers[key] === true
+          : jobAnswers[key] === true;
       }
-      if (key.includes('does_deck_have_railings') || key.includes('railing_needed')) {
+      if (
+        key.includes('does_deck_have_railings') ||
+        key.includes('railing_needed')
+      ) {
         hasRailing = Array.isArray(jobAnswers[key])
           ? jobAnswers[key].includes('Yes')
-          : jobAnswers[key] === true
+          : jobAnswers[key] === true;
       }
       if (key.includes('total_columns_needed')) {
-        columnCount = parseInt(jobAnswers[key]) || 4
+        columnCount = parseInt(jobAnswers[key]) || 4;
       }
       if (key.includes('total_level_railing_linear_ft')) {
-        railingLinearFt = parseFloat(jobAnswers[key]) || 0
+        railingLinearFt = parseFloat(jobAnswers[key]) || 0;
       }
-    })
+    });
 
-    return { dimensions, deckHeight, hasStairs, hasRailing, columnCount, railingLinearFt, deckingDirection }
-  }
+    return {
+      dimensions,
+      deckHeight,
+      hasStairs,
+      hasRailing,
+      columnCount,
+      railingLinearFt,
+      deckingDirection,
+    };
+  };
 
   const generateDiagram = () => {
-    const { dimensions, deckHeight, hasStairs, hasRailing, columnCount, railingLinearFt, deckingDirection } = parseDimensions()
+    const {
+      dimensions,
+      deckHeight,
+      hasStairs,
+      hasRailing,
+      columnCount,
+      railingLinearFt,
+      deckingDirection,
+    } = parseDimensions();
 
     if (dimensions.length === 0) {
-      dimensions.push({ length: 16, width: 12 })
+      dimensions.push({ length: 16, width: 12 });
     }
 
-    const totalLength = Math.max(...dimensions.map(d => d.length), 16)
-    const totalWidth = Math.max(...dimensions.map(d => d.width), 12)
+    const totalLength = Math.max(...dimensions.map((d) => d.length), 16);
+    const totalWidth = Math.max(...dimensions.map((d) => d.width), 12);
 
-    const availableWidth = width - PADDING * 2
-    const availableHeight = height - PADDING * 2 - 60 // Extra space for title
-    const scaleX = availableWidth / (totalLength * SCALE_FACTOR)
-    const scaleY = availableHeight / (totalWidth * SCALE_FACTOR)
-    const autoScale = Math.min(scaleX, scaleY, 1.5)
+    const availableWidth = width - PADDING * 2;
+    const availableHeight = height - PADDING * 2 - 60; // Extra space for title
+    const scaleX = availableWidth / (totalLength * SCALE_FACTOR);
+    const scaleY = availableHeight / (totalWidth * SCALE_FACTOR);
+    const autoScale = Math.min(scaleX, scaleY, 1.5);
 
-    const diagramWidth = totalLength * SCALE_FACTOR * autoScale
-    const diagramHeight = totalWidth * SCALE_FACTOR * autoScale
-    const offsetX = (width - diagramWidth) / 2
-    const offsetY = (height - diagramHeight) / 2 + 20
+    const diagramWidth = totalLength * SCALE_FACTOR * autoScale;
+    const diagramHeight = totalWidth * SCALE_FACTOR * autoScale;
+    const offsetX = (width - diagramWidth) / 2;
+    const offsetY = (height - diagramHeight) / 2 + 20;
 
     setDiagram({
       dimensions,
@@ -132,60 +162,81 @@ export function AutoDiagramCanvas({
       offsetY,
       diagramWidth,
       diagramHeight,
-    })
-  }
+    });
+  };
 
   useEffect(() => {
-    generateDiagram()
-  }, [jobData, width, height])
+    generateDiagram();
+  }, [jobData, width, height]);
 
   const handleExport = () => {
     if (stageRef.current) {
-      const dataURL = stageRef.current.toDataURL({ pixelRatio: 3 })
-      onExport(dataURL)
+      const dataURL = stageRef.current.toDataURL({ pixelRatio: 3 });
+      onExport(dataURL);
     }
-  }
+  };
 
-  const renderGrid = (offsetX: number, offsetY: number, diagramWidth: number, diagramHeight: number) => {
-    const lines = []
-    const gridSize = SCALE_FACTOR * (diagram?.autoScale || 1)
+  const renderGrid = (
+    offsetX: number,
+    offsetY: number,
+    diagramWidth: number,
+    diagramHeight: number
+  ) => {
+    const lines = [];
+    const gridSize = SCALE_FACTOR * (diagram?.autoScale || 1);
 
     // Background pattern
     for (let i = -2; i <= diagramWidth / gridSize + 2; i++) {
       lines.push(
         <Line
           key={`grid-v-${i}`}
-          points={[offsetX + i * gridSize, offsetY - 20, offsetX + i * gridSize, offsetY + diagramHeight + 20]}
+          points={[
+            offsetX + i * gridSize,
+            offsetY - 20,
+            offsetX + i * gridSize,
+            offsetY + diagramHeight + 20,
+          ]}
           stroke={i % 5 === 0 ? COLORS.gridMajor : COLORS.gridMinor}
           strokeWidth={i % 5 === 0 ? 1 : 0.5}
           opacity={0.5}
         />
-      )
+      );
     }
     for (let i = -2; i <= diagramHeight / gridSize + 2; i++) {
       lines.push(
         <Line
           key={`grid-h-${i}`}
-          points={[offsetX - 20, offsetY + i * gridSize, offsetX + diagramWidth + 20, offsetY + i * gridSize]}
+          points={[
+            offsetX - 20,
+            offsetY + i * gridSize,
+            offsetX + diagramWidth + 20,
+            offsetY + i * gridSize,
+          ]}
           stroke={i % 5 === 0 ? COLORS.gridMajor : COLORS.gridMinor}
           strokeWidth={i % 5 === 0 ? 1 : 0.5}
           opacity={0.5}
         />
-      )
+      );
     }
-    return lines
-  }
+    return lines;
+  };
 
-  const renderDeckingPattern = (x: number, y: number, w: number, h: number, autoScale: number) => {
-    const boards = []
-    const boardWidth = 5.5 * autoScale // 5.5" board width
-    const gapWidth = 0.25 * autoScale
+  const renderDeckingPattern = (
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    autoScale: number
+  ) => {
+    const boards = [];
+    const boardWidth = 5.5 * autoScale; // 5.5" board width
+    const gapWidth = 0.25 * autoScale;
 
-    const totalBoardWidth = boardWidth + gapWidth
-    const boardCount = Math.ceil(h / totalBoardWidth)
+    const totalBoardWidth = boardWidth + gapWidth;
+    const boardCount = Math.ceil(h / totalBoardWidth);
 
     for (let i = 0; i < boardCount; i++) {
-      const yPos = y + i * totalBoardWidth
+      const yPos = y + i * totalBoardWidth;
       if (yPos < y + h) {
         // Main board
         boards.push(
@@ -197,25 +248,36 @@ export function AutoDiagramCanvas({
             height={Math.min(boardWidth, y + h - yPos)}
             fill={i % 2 === 0 ? COLORS.deckSurface : '#CFA06A'}
           />
-        )
+        );
         // Board edge highlight
         boards.push(
           <Line
             key={`board-edge-${i}`}
-            points={[x + 2, yPos + boardWidth - 1, x + w - 2, yPos + boardWidth - 1]}
+            points={[
+              x + 2,
+              yPos + boardWidth - 1,
+              x + w - 2,
+              yPos + boardWidth - 1,
+            ]}
             stroke={COLORS.deckBoardLines}
             strokeWidth={0.5}
             opacity={0.6}
           />
-        )
+        );
       }
     }
-    return boards
-  }
+    return boards;
+  };
 
-  const renderDeckSection = (dim: { length: number; width: number }, index: number, offsetX: number, offsetY: number, autoScale: number) => {
-    const sectionWidth = dim.length * SCALE_FACTOR * autoScale
-    const sectionHeight = dim.width * SCALE_FACTOR * autoScale
+  const renderDeckSection = (
+    dim: { length: number; width: number },
+    index: number,
+    offsetX: number,
+    offsetY: number,
+    autoScale: number
+  ) => {
+    const sectionWidth = dim.length * SCALE_FACTOR * autoScale;
+    const sectionHeight = dim.width * SCALE_FACTOR * autoScale;
 
     return (
       <Group key={`deck-section-${index}`}>
@@ -242,7 +304,14 @@ export function AutoDiagramCanvas({
         />
 
         {/* Decking board pattern */}
-        {showDetails && renderDeckingPattern(offsetX, offsetY, sectionWidth, sectionHeight, autoScale)}
+        {showDetails &&
+          renderDeckingPattern(
+            offsetX,
+            offsetY,
+            sectionWidth,
+            sectionHeight,
+            autoScale
+          )}
 
         {/* Perimeter frame highlight */}
         <Rect
@@ -258,24 +327,35 @@ export function AutoDiagramCanvas({
 
         {/* Dimension annotations */}
         {renderDimensionAnnotation(
-          offsetX, offsetY - 35,
-          offsetX + sectionWidth, offsetY - 35,
+          offsetX,
+          offsetY - 35,
+          offsetX + sectionWidth,
+          offsetY - 35,
           `${dim.length}'`,
           'horizontal'
         )}
         {renderDimensionAnnotation(
-          offsetX + sectionWidth + 35, offsetY,
-          offsetX + sectionWidth + 35, offsetY + sectionHeight,
+          offsetX + sectionWidth + 35,
+          offsetY,
+          offsetX + sectionWidth + 35,
+          offsetY + sectionHeight,
           `${dim.width}'`,
           'vertical'
         )}
       </Group>
-    )
-  }
+    );
+  };
 
-  const renderDimensionAnnotation = (x1: number, y1: number, x2: number, y2: number, label: string, orientation: 'horizontal' | 'vertical') => {
-    const midX = (x1 + x2) / 2
-    const midY = (y1 + y2) / 2
+  const renderDimensionAnnotation = (
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    label: string,
+    orientation: 'horizontal' | 'vertical'
+  ) => {
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
 
     return (
       <Group>
@@ -289,13 +369,29 @@ export function AutoDiagramCanvas({
         {/* End ticks */}
         {orientation === 'horizontal' ? (
           <>
-            <Line points={[x1, y1 - 8, x1, y1 + 8]} stroke={COLORS.dimensionLine} strokeWidth={1.5} />
-            <Line points={[x2, y2 - 8, x2, y2 + 8]} stroke={COLORS.dimensionLine} strokeWidth={1.5} />
+            <Line
+              points={[x1, y1 - 8, x1, y1 + 8]}
+              stroke={COLORS.dimensionLine}
+              strokeWidth={1.5}
+            />
+            <Line
+              points={[x2, y2 - 8, x2, y2 + 8]}
+              stroke={COLORS.dimensionLine}
+              strokeWidth={1.5}
+            />
           </>
         ) : (
           <>
-            <Line points={[x1 - 8, y1, x1 + 8, y1]} stroke={COLORS.dimensionLine} strokeWidth={1.5} />
-            <Line points={[x2 - 8, y2, x2 + 8, y2]} stroke={COLORS.dimensionLine} strokeWidth={1.5} />
+            <Line
+              points={[x1 - 8, y1, x1 + 8, y1]}
+              stroke={COLORS.dimensionLine}
+              strokeWidth={1.5}
+            />
+            <Line
+              points={[x2 - 8, y2, x2 + 8, y2]}
+              stroke={COLORS.dimensionLine}
+              strokeWidth={1.5}
+            />
           </>
         )}
 
@@ -321,25 +417,42 @@ export function AutoDiagramCanvas({
           fill={COLORS.dimensionText}
         />
       </Group>
-    )
-  }
+    );
+  };
 
-  const renderPosts = (offsetX: number, offsetY: number, sectionWidth: number, sectionHeight: number, count: number, autoScale: number) => {
-    const posts: React.ReactNode[] = []
-    const postSize = 8 * autoScale
+  const renderPosts = (
+    offsetX: number,
+    offsetY: number,
+    sectionWidth: number,
+    sectionHeight: number,
+    count: number,
+    autoScale: number
+  ) => {
+    const posts: React.ReactNode[] = [];
+    const postSize = 8 * autoScale;
 
     // Calculate post positions
-    const positions = []
-    const colsX = Math.ceil(Math.sqrt(count * (sectionWidth / sectionHeight)))
-    const rowsY = Math.ceil(count / colsX)
+    const positions = [];
+    const colsX = Math.ceil(Math.sqrt(count * (sectionWidth / sectionHeight)));
+    const rowsY = Math.ceil(count / colsX);
 
     for (let row = 0; row < rowsY; row++) {
       for (let col = 0; col < colsX; col++) {
         if (positions.length < count) {
           positions.push({
-            x: col === 0 ? 0 : col === colsX - 1 ? sectionWidth : col * (sectionWidth / (colsX - 1)),
-            y: row === 0 ? 0 : row === rowsY - 1 ? sectionHeight : row * (sectionHeight / (rowsY - 1))
-          })
+            x:
+              col === 0
+                ? 0
+                : col === colsX - 1
+                  ? sectionWidth
+                  : col * (sectionWidth / (colsX - 1)),
+            y:
+              row === 0
+                ? 0
+                : row === rowsY - 1
+                  ? sectionHeight
+                  : row * (sectionHeight / (rowsY - 1)),
+          });
         }
       }
     }
@@ -388,17 +501,23 @@ export function AutoDiagramCanvas({
             />
           )}
         </Group>
-      )
-    })
+      );
+    });
 
-    return posts
-  }
+    return posts;
+  };
 
-  const renderRailing = (offsetX: number, offsetY: number, sectionWidth: number, sectionHeight: number, autoScale: number) => {
-    const railings = []
-    const railWidth = 6 * autoScale
-    const balusterSpacing = 20 * autoScale
-    const balusterWidth = 3 * autoScale
+  const renderRailing = (
+    offsetX: number,
+    offsetY: number,
+    sectionWidth: number,
+    sectionHeight: number,
+    autoScale: number
+  ) => {
+    const railings = [];
+    const railWidth = 6 * autoScale;
+    const balusterSpacing = 20 * autoScale;
+    const balusterWidth = 3 * autoScale;
 
     // Top railing
     railings.push(
@@ -414,17 +533,20 @@ export function AutoDiagramCanvas({
           cornerRadius={1}
         />
         {/* Balusters */}
-        {showDetails && Array.from({ length: Math.floor(sectionWidth / balusterSpacing) }).map((_, i) => (
-          <Rect
-            key={`baluster-top-${i}`}
-            x={offsetX + i * balusterSpacing + 5}
-            y={offsetY - railWidth - 12}
-            width={balusterWidth}
-            height={15}
-            fill={COLORS.railingDetail}
-            cornerRadius={1}
-          />
-        ))}
+        {showDetails &&
+          Array.from({
+            length: Math.floor(sectionWidth / balusterSpacing),
+          }).map((_, i) => (
+            <Rect
+              key={`baluster-top-${i}`}
+              x={offsetX + i * balusterSpacing + 5}
+              y={offsetY - railWidth - 12}
+              width={balusterWidth}
+              height={15}
+              fill={COLORS.railingDetail}
+              cornerRadius={1}
+            />
+          ))}
         {/* Top rail cap */}
         <Rect
           x={offsetX - 2}
@@ -435,7 +557,7 @@ export function AutoDiagramCanvas({
           cornerRadius={2}
         />
       </Group>
-    )
+    );
 
     // Left railing
     railings.push(
@@ -450,19 +572,22 @@ export function AutoDiagramCanvas({
           strokeWidth={1}
           cornerRadius={1}
         />
-        {showDetails && Array.from({ length: Math.floor(sectionHeight / balusterSpacing) }).map((_, i) => (
-          <Rect
-            key={`baluster-left-${i}`}
-            x={offsetX - railWidth - 12}
-            y={offsetY + i * balusterSpacing + 5}
-            width={15}
-            height={balusterWidth}
-            fill={COLORS.railingDetail}
-            cornerRadius={1}
-          />
-        ))}
+        {showDetails &&
+          Array.from({
+            length: Math.floor(sectionHeight / balusterSpacing),
+          }).map((_, i) => (
+            <Rect
+              key={`baluster-left-${i}`}
+              x={offsetX - railWidth - 12}
+              y={offsetY + i * balusterSpacing + 5}
+              width={15}
+              height={balusterWidth}
+              fill={COLORS.railingDetail}
+              cornerRadius={1}
+            />
+          ))}
       </Group>
-    )
+    );
 
     // Right railing
     railings.push(
@@ -477,30 +602,39 @@ export function AutoDiagramCanvas({
           strokeWidth={1}
           cornerRadius={1}
         />
-        {showDetails && Array.from({ length: Math.floor(sectionHeight / balusterSpacing) }).map((_, i) => (
-          <Rect
-            key={`baluster-right-${i}`}
-            x={offsetX + sectionWidth + 5}
-            y={offsetY + i * balusterSpacing + 5}
-            width={15}
-            height={balusterWidth}
-            fill={COLORS.railingDetail}
-            cornerRadius={1}
-          />
-        ))}
+        {showDetails &&
+          Array.from({
+            length: Math.floor(sectionHeight / balusterSpacing),
+          }).map((_, i) => (
+            <Rect
+              key={`baluster-right-${i}`}
+              x={offsetX + sectionWidth + 5}
+              y={offsetY + i * balusterSpacing + 5}
+              width={15}
+              height={balusterWidth}
+              fill={COLORS.railingDetail}
+              cornerRadius={1}
+            />
+          ))}
       </Group>
-    )
+    );
 
-    return railings
-  }
+    return railings;
+  };
 
-  const renderStairs = (offsetX: number, offsetY: number, sectionHeight: number, deckHeight: number, autoScale: number) => {
-    const stairWidth = 4 * SCALE_FACTOR * autoScale
-    const stepRise = 7.5 // inches
-    const stepRun = 10 // inches
-    const totalRise = deckHeight * 12 // convert feet to inches
-    const stepCount = Math.ceil(totalRise / stepRise)
-    const stairDepth = stepCount * (stepRun / 12) * SCALE_FACTOR * autoScale
+  const renderStairs = (
+    offsetX: number,
+    offsetY: number,
+    sectionHeight: number,
+    deckHeight: number,
+    autoScale: number
+  ) => {
+    const stairWidth = 4 * SCALE_FACTOR * autoScale;
+    const stepRise = 7.5; // inches
+    const stepRun = 10; // inches
+    const totalRise = deckHeight * 12; // convert feet to inches
+    const stepCount = Math.ceil(totalRise / stepRise);
+    const stairDepth = stepCount * (stepRun / 12) * SCALE_FACTOR * autoScale;
 
     return (
       <Group>
@@ -522,7 +656,12 @@ export function AutoDiagramCanvas({
             {/* Tread */}
             <Rect
               x={offsetX - stairWidth}
-              y={offsetY + sectionHeight / 2 - stairDepth / 2 + i * (stairDepth / stepCount)}
+              y={
+                offsetY +
+                sectionHeight / 2 -
+                stairDepth / 2 +
+                i * (stairDepth / stepCount)
+              }
               width={stairWidth}
               height={stairDepth / stepCount - 2}
               fill={i % 2 === 0 ? COLORS.stairs : COLORS.stairTread}
@@ -533,9 +672,17 @@ export function AutoDiagramCanvas({
             <Line
               points={[
                 offsetX - stairWidth + 2,
-                offsetY + sectionHeight / 2 - stairDepth / 2 + i * (stairDepth / stepCount) + 2,
+                offsetY +
+                  sectionHeight / 2 -
+                  stairDepth / 2 +
+                  i * (stairDepth / stepCount) +
+                  2,
                 offsetX - 2,
-                offsetY + sectionHeight / 2 - stairDepth / 2 + i * (stairDepth / stepCount) + 2
+                offsetY +
+                  sectionHeight / 2 -
+                  stairDepth / 2 +
+                  i * (stairDepth / stepCount) +
+                  2,
               ]}
               stroke="rgba(255,255,255,0.4)"
               strokeWidth={2}
@@ -560,7 +707,7 @@ export function AutoDiagramCanvas({
               offsetX - stairWidth / 2,
               offsetY + sectionHeight / 2 - stairDepth / 2 - 20,
               offsetX - stairWidth / 2,
-              offsetY + sectionHeight / 2 - stairDepth / 2 - 8
+              offsetY + sectionHeight / 2 - stairDepth / 2 - 8,
             ]}
             pointerLength={6}
             pointerWidth={6}
@@ -600,7 +747,7 @@ export function AutoDiagramCanvas({
                 offsetX - stairWidth,
                 offsetY + sectionHeight / 2 + stairDepth / 2 + 15,
                 offsetX,
-                offsetY + sectionHeight / 2 + stairDepth / 2 + 15
+                offsetY + sectionHeight / 2 + stairDepth / 2 + 15,
               ]}
               stroke={COLORS.dimensionLine}
               strokeWidth={1}
@@ -616,10 +763,15 @@ export function AutoDiagramCanvas({
           </Group>
         )}
       </Group>
-    )
-  }
+    );
+  };
 
-  const renderLedger = (offsetX: number, offsetY: number, sectionWidth: number, autoScale: number) => {
+  const renderLedger = (
+    offsetX: number,
+    offsetY: number,
+    sectionWidth: number,
+    autoScale: number
+  ) => {
     return (
       <Group>
         {/* House wall shadow */}
@@ -644,7 +796,12 @@ export function AutoDiagramCanvas({
         {Array.from({ length: 4 }).map((_, i) => (
           <Line
             key={`siding-${i}`}
-            points={[offsetX + 2, offsetY - 23 + i * 4, offsetX + sectionWidth - 2, offsetY - 23 + i * 4]}
+            points={[
+              offsetX + 2,
+              offsetY - 23 + i * 4,
+              offsetX + sectionWidth - 2,
+              offsetY - 23 + i * 4,
+            ]}
             stroke="#94A3B8"
             strokeWidth={1}
             opacity={0.5}
@@ -668,17 +825,21 @@ export function AutoDiagramCanvas({
           fontStyle="bold"
         />
       </Group>
-    )
-  }
+    );
+  };
 
   const renderLegend = () => {
     const legendItems = [
-      { color: COLORS.deckSurface, label: 'Deck Surface', border: COLORS.deckBorder },
+      {
+        color: COLORS.deckSurface,
+        label: 'Deck Surface',
+        border: COLORS.deckBorder,
+      },
       { color: COLORS.railing, label: 'Railing', border: COLORS.railingDetail },
       { color: COLORS.post, label: 'Posts (6×6)', border: COLORS.postCap },
       { color: COLORS.stairs, label: 'Stairs', border: COLORS.deckBorder },
       { color: COLORS.ledger, label: 'House', border: '#475569' },
-    ]
+    ];
 
     return (
       <Group x={15} y={height / scale - 115}>
@@ -707,11 +868,7 @@ export function AutoDiagramCanvas({
         />
 
         {/* Divider */}
-        <Line
-          points={[8, 22, 122, 22]}
-          stroke="#E2E8F0"
-          strokeWidth={1}
-        />
+        <Line points={[8, 22, 122, 22]} stroke="#E2E8F0" strokeWidth={1} />
 
         {/* Legend items */}
         {legendItems.map((item, i) => (
@@ -736,19 +893,14 @@ export function AutoDiagramCanvas({
           </Group>
         ))}
       </Group>
-    )
-  }
+    );
+  };
 
   const renderNorthArrow = () => {
     return (
       <Group x={width / scale - 60} y={60}>
         {/* Circle background */}
-        <Circle
-          radius={20}
-          fill="white"
-          stroke="#E2E8F0"
-          strokeWidth={1}
-        />
+        <Circle radius={20} fill="white" stroke="#E2E8F0" strokeWidth={1} />
         {/* Arrow */}
         <Arrow
           points={[0, 12, 0, -12]}
@@ -768,12 +920,14 @@ export function AutoDiagramCanvas({
           fill={COLORS.title}
         />
       </Group>
-    )
-  }
+    );
+  };
 
   const renderScaleBar = () => {
-    const barLength = 100
-    const feetPerBar = Math.round(barLength / SCALE_FACTOR / (diagram?.autoScale || 1))
+    const barLength = 100;
+    const feetPerBar = Math.round(
+      barLength / SCALE_FACTOR / (diagram?.autoScale || 1)
+    );
 
     return (
       <Group x={width / scale - 140} y={height / scale - 40}>
@@ -796,21 +950,42 @@ export function AutoDiagramCanvas({
 
         {/* Tick marks */}
         <Line points={[15, 10, 15, 20]} stroke={COLORS.title} strokeWidth={2} />
-        <Line points={[15 + barLength / 2, 12, 15 + barLength / 2, 18]} stroke={COLORS.title} strokeWidth={1} />
-        <Line points={[15 + barLength, 10, 15 + barLength, 20]} stroke={COLORS.title} strokeWidth={2} />
+        <Line
+          points={[15 + barLength / 2, 12, 15 + barLength / 2, 18]}
+          stroke={COLORS.title}
+          strokeWidth={1}
+        />
+        <Line
+          points={[15 + barLength, 10, 15 + barLength, 20]}
+          stroke={COLORS.title}
+          strokeWidth={2}
+        />
 
         {/* Labels */}
         <Text text="0" x={12} y={21} fontSize={8} fill={COLORS.legend} />
-        <Text text={`${feetPerBar}'`} x={100} y={21} fontSize={8} fill={COLORS.legend} />
-        <Text text="Scale" x={50} y={4} fontSize={8} fill={COLORS.legend} fontStyle="italic" />
+        <Text
+          text={`${feetPerBar}'`}
+          x={100}
+          y={21}
+          fontSize={8}
+          fill={COLORS.legend}
+        />
+        <Text
+          text="Scale"
+          x={50}
+          y={4}
+          fontSize={8}
+          fill={COLORS.legend}
+          fontStyle="italic"
+        />
       </Group>
-    )
-  }
+    );
+  };
 
   const renderTitle = () => {
-    const projectName = jobData?.customerInfo?.name || 'Deck Project'
-    const address = jobData?.customerInfo?.address || ''
-    const date = new Date().toLocaleDateString()
+    const projectName = jobData?.customerInfo?.name || 'Deck Project';
+    const address = jobData?.customerInfo?.address || '';
+    const date = new Date().toLocaleDateString();
 
     return (
       <Group x={width / scale / 2} y={25}>
@@ -834,8 +1009,8 @@ export function AutoDiagramCanvas({
           />
         )}
       </Group>
-    )
-  }
+    );
+  };
 
   if (!diagram) {
     return (
@@ -845,13 +1020,26 @@ export function AutoDiagramCanvas({
           <p className="text-slate-500 font-medium">Generating diagram...</p>
         </div>
       </div>
-    )
+    );
   }
 
-  const { dimensions, totalLength, totalWidth, hasStairs, hasRailing, columnCount, autoScale, offsetX, offsetY, diagramWidth, diagramHeight, deckHeight } = diagram
-  const mainDim = dimensions[0] || { length: 16, width: 12 }
-  const sectionWidth = mainDim.length * SCALE_FACTOR * autoScale
-  const sectionHeight = mainDim.width * SCALE_FACTOR * autoScale
+  const {
+    dimensions,
+    totalLength,
+    totalWidth,
+    hasStairs,
+    hasRailing,
+    columnCount,
+    autoScale,
+    offsetX,
+    offsetY,
+    diagramWidth,
+    diagramHeight,
+    deckHeight,
+  } = diagram;
+  const mainDim = dimensions[0] || { length: 16, width: 12 };
+  const sectionWidth = mainDim.length * SCALE_FACTOR * autoScale;
+  const sectionHeight = mainDim.width * SCALE_FACTOR * autoScale;
 
   return (
     <div className="space-y-3">
@@ -871,7 +1059,9 @@ export function AutoDiagramCanvas({
           <button
             onClick={() => setShowDetails(!showDetails)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-              showDetails ? 'bg-blue-500 text-white' : 'bg-slate-900/50 text-slate-300 hover:bg-slate-600'
+              showDetails
+                ? 'bg-blue-500 text-white'
+                : 'bg-slate-900/50 text-slate-300 hover:bg-slate-600'
             }`}
           >
             <Eye className="w-4 h-4" />
@@ -888,7 +1078,9 @@ export function AutoDiagramCanvas({
             >
               <ZoomIn className="w-4 h-4" />
             </button>
-            <span className="px-2 text-xs text-slate-300 font-mono">{Math.round(scale * 100)}%</span>
+            <span className="px-2 text-xs text-slate-300 font-mono">
+              {Math.round(scale * 100)}%
+            </span>
             <button
               onClick={() => setScale(Math.max(scale - 0.25, 0.5))}
               className="p-2 rounded-lg text-slate-300 hover:bg-slate-600 hover:text-white transition-colors"
@@ -920,7 +1112,8 @@ export function AutoDiagramCanvas({
         >
           <Layer>
             {/* Background grid */}
-            {showDetails && renderGrid(offsetX, offsetY, diagramWidth, diagramHeight)}
+            {showDetails &&
+              renderGrid(offsetX, offsetY, diagramWidth, diagramHeight)}
 
             {/* Title */}
             {renderTitle()}
@@ -929,18 +1122,40 @@ export function AutoDiagramCanvas({
             {renderLedger(offsetX, offsetY, sectionWidth, autoScale)}
 
             {/* Main deck sections */}
-            {dimensions.map((dim: { length: number; width: number }, i: number) =>
-              renderDeckSection(dim, i, offsetX, offsetY, autoScale)
+            {dimensions.map(
+              (dim: { length: number; width: number }, i: number) =>
+                renderDeckSection(dim, i, offsetX, offsetY, autoScale)
             )}
 
             {/* Railings */}
-            {hasRailing && renderRailing(offsetX, offsetY, sectionWidth, sectionHeight, autoScale)}
+            {hasRailing &&
+              renderRailing(
+                offsetX,
+                offsetY,
+                sectionWidth,
+                sectionHeight,
+                autoScale
+              )}
 
             {/* Posts */}
-            {renderPosts(offsetX, offsetY, sectionWidth, sectionHeight, columnCount, autoScale)}
+            {renderPosts(
+              offsetX,
+              offsetY,
+              sectionWidth,
+              sectionHeight,
+              columnCount,
+              autoScale
+            )}
 
             {/* Stairs */}
-            {hasStairs && renderStairs(offsetX, offsetY, sectionHeight, deckHeight, autoScale)}
+            {hasStairs &&
+              renderStairs(
+                offsetX,
+                offsetY,
+                sectionHeight,
+                deckHeight,
+                autoScale
+              )}
 
             {/* Legend */}
             {renderLegend()}
@@ -957,14 +1172,23 @@ export function AutoDiagramCanvas({
       {/* Info */}
       <div className="flex items-center justify-between bg-slate-50 rounded-lg py-2 px-4 text-sm text-slate-600">
         <div>
-          <span className="font-medium">Dimensions:</span> {mainDim.length}' × {mainDim.width}' ({mainDim.length * mainDim.width} sq ft)
+          <span className="font-medium">Dimensions:</span> {mainDim.length}' ×{' '}
+          {mainDim.width}' ({mainDim.length * mainDim.width} sq ft)
         </div>
         <div className="flex gap-4">
-          <span><span className="font-medium">Posts:</span> {columnCount}</span>
-          <span><span className="font-medium">Railing:</span> {hasRailing ? 'Yes' : 'No'}</span>
-          <span><span className="font-medium">Stairs:</span> {hasStairs ? 'Yes' : 'No'}</span>
+          <span>
+            <span className="font-medium">Posts:</span> {columnCount}
+          </span>
+          <span>
+            <span className="font-medium">Railing:</span>{' '}
+            {hasRailing ? 'Yes' : 'No'}
+          </span>
+          <span>
+            <span className="font-medium">Stairs:</span>{' '}
+            {hasStairs ? 'Yes' : 'No'}
+          </span>
         </div>
       </div>
     </div>
-  )
+  );
 }

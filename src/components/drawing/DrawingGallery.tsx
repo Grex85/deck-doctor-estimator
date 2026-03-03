@@ -1,62 +1,70 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { Trash2, Edit, Download, Layers } from 'lucide-react'
-import { DrawingGalleryProps, Drawing } from './types'
-import { downloadDataURL } from '@/lib/drawing/firebase-storage'
+import * as React from 'react';
+import { Trash2, Edit, Download, Layers } from 'lucide-react';
+import { DrawingGalleryProps } from './types';
+import { downloadDataURL } from '@/lib/drawing/firebase-storage';
 
-export function DrawingGallery({ drawings, onEdit, onDelete }: DrawingGalleryProps) {
-  const [deletingId, setDeletingId] = React.useState<string | null>(null)
+export function DrawingGallery({
+  drawings,
+  onEdit,
+  onDelete,
+}: DrawingGalleryProps) {
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
-  const handleDelete = async (id: string, drawing: Drawing) => {
-    if (!confirm('Are you sure you want to delete this drawing? This action cannot be undone.')) {
-      return
+  const handleDelete = async (id: string) => {
+    if (
+      !confirm(
+        'Are you sure you want to delete this drawing? This action cannot be undone.'
+      )
+    ) {
+      return;
     }
 
-    setDeletingId(id)
+    setDeletingId(id);
     try {
-      await onDelete(id)
+      await onDelete(id);
     } catch (error) {
-      console.error('Error deleting drawing:', error)
-      alert('Failed to delete drawing. Please try again.')
+      console.error('Error deleting drawing:', error);
+      alert('Failed to delete drawing. Please try again.');
     } finally {
-      setDeletingId(null)
+      setDeletingId(null);
     }
-  }
+  };
 
   const handleDownload = (drawing: Drawing) => {
-    const filename = `drawing-${drawing.mode}-${new Date().toISOString().split('T')[0]}.png`
-    downloadDataURL(drawing.fullImageUrl, filename)
-  }
+    const filename = `drawing-${drawing.mode}-${new Date().toISOString().split('T')[0]}.png`;
+    downloadDataURL(drawing.fullImageUrl, filename);
+  };
 
   const getModeLabel = (mode: string) => {
     switch (mode) {
       case 'auto-generated':
-        return 'Auto-Generated'
+        return 'Auto-Generated';
       case 'photo-annotation':
-        return 'Photo Annotation'
+        return 'Photo Annotation';
       case 'interactive-builder':
-        return 'Interactive Builder'
+        return 'Interactive Builder';
       default:
-        return mode
+        return mode;
     }
-  }
+  };
 
   const getModeBadgeColor = (mode: string) => {
     switch (mode) {
       case 'auto-generated':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-blue-100 text-blue-800';
       case 'photo-annotation':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800';
       case 'interactive-builder':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple-100 text-purple-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   if (drawings.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -128,7 +136,9 @@ export function DrawingGallery({ drawings, onEdit, onDelete }: DrawingGalleryPro
                 >
                   <Trash2
                     className={`w-4 h-4 ${
-                      deletingId === drawing.id ? 'text-gray-400' : 'text-red-600'
+                      deletingId === drawing.id
+                        ? 'text-gray-400'
+                        : 'text-red-600'
                     }`}
                   />
                 </button>
@@ -140,12 +150,13 @@ export function DrawingGallery({ drawings, onEdit, onDelete }: DrawingGalleryPro
               <p className="text-xs text-gray-600 text-center">
                 {typeof drawing.createdAt === 'string'
                   ? new Date(drawing.createdAt).toLocaleDateString()
-                  : drawing.createdAt.toDate?.().toLocaleDateString() || 'Unknown date'}
+                  : drawing.createdAt.toDate?.().toLocaleDateString() ||
+                    'Unknown date'}
               </p>
             </div>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }

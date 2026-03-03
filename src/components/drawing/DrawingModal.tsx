@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { v4 as uuidv4 } from 'uuid'
+import * as React from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DrawingModalProps, DrawingMode, Drawing } from './types'
-import { PhotoAnnotationCanvas } from './PhotoAnnotationCanvas'
-import { InteractiveBuilderCanvas } from './InteractiveBuilderCanvas'
-import { AutoDiagramCanvas } from './AutoDiagramCanvas'
-import { Upload, Image as ImageIcon, X } from 'lucide-react'
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DrawingModalProps, DrawingMode, Drawing } from './types';
+import { PhotoAnnotationCanvas } from './PhotoAnnotationCanvas';
+import { InteractiveBuilderCanvas } from './InteractiveBuilderCanvas';
+import { AutoDiagramCanvas } from './AutoDiagramCanvas';
+import { Upload, Image as ImageIcon, X } from 'lucide-react';
 
 export function DrawingModal({
   isOpen,
@@ -24,24 +24,27 @@ export function DrawingModal({
   onSaveDrawing,
   existingDrawing,
 }: DrawingModalProps) {
-  const [activeMode, setActiveMode] = React.useState<DrawingMode>('auto-generated')
-  const [isSaving, setIsSaving] = React.useState(false)
-  const [exportedImage, setExportedImage] = React.useState<string | null>(null)
-  const [selectedPhoto, setSelectedPhoto] = React.useState<string | null>(null)
-  const [uploadedPhoto, setUploadedPhoto] = React.useState<string | null>(null)
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [activeMode, setActiveMode] =
+    React.useState<DrawingMode>('auto-generated');
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [exportedImage, setExportedImage] = React.useState<string | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = React.useState<string | null>(null);
+  const [uploadedPhoto, setUploadedPhoto] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleExport = (dataURL: string) => {
-    setExportedImage(dataURL)
-  }
+    setExportedImage(dataURL);
+  };
 
   const handleSave = async () => {
     if (!exportedImage) {
-      alert('Please export your drawing first using the Export button on the canvas.')
-      return
+      alert(
+        'Please export your drawing first using the Export button on the canvas.'
+      );
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       const drawing: Drawing = {
         id: existingDrawing?.id || uuidv4(),
@@ -62,43 +65,45 @@ export function DrawingModal({
           sourceData: jobData?.jobSpecificAnswers || {},
           elements: [],
         } as any,
-      }
+      };
 
-      onSaveDrawing(drawing)
-      onClose()
+      onSaveDrawing(drawing);
+      onClose();
     } catch (error) {
-      console.error('Error saving drawing:', error)
-      alert('Failed to save drawing. Please try again.')
+      console.error('Error saving drawing:', error);
+      alert('Failed to save drawing. Please try again.');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (event) => {
-        setUploadedPhoto(event.target?.result as string)
-        setSelectedPhoto(event.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+        setUploadedPhoto(event.target?.result as string);
+        setSelectedPhoto(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleDownload = () => {
     if (exportedImage) {
-      const link = document.createElement('a')
-      link.download = `deck-drawing-${new Date().toISOString().split('T')[0]}.png`
-      link.href = exportedImage
-      link.click()
+      const link = document.createElement('a');
+      link.download = `deck-drawing-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = exportedImage;
+      link.click();
     }
-  }
+  };
 
   // Get image files from uploadedFiles
   const imageFiles = (uploadedFiles || []).filter(
-    (file: any) => file.type?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-  )
+    (file: any) =>
+      file.type?.startsWith('image/') ||
+      file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -113,18 +118,14 @@ export function DrawingModal({
         <Tabs
           value={activeMode}
           onValueChange={(value) => {
-            setActiveMode(value as DrawingMode)
-            setExportedImage(null)
+            setActiveMode(value as DrawingMode);
+            setExportedImage(null);
           }}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="auto-generated">
-              Auto-Generated
-            </TabsTrigger>
-            <TabsTrigger value="photo-annotation">
-              Photo Annotation
-            </TabsTrigger>
+            <TabsTrigger value="auto-generated">Auto-Generated</TabsTrigger>
+            <TabsTrigger value="photo-annotation">Photo Annotation</TabsTrigger>
             <TabsTrigger value="interactive-builder">
               Interactive Builder
             </TabsTrigger>
@@ -133,7 +134,8 @@ export function DrawingModal({
           <TabsContent value="auto-generated" className="space-y-4">
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <p className="text-gray-600 mb-4 text-sm">
-                Automatically generate a 2D diagram based on the measurements you entered in the form.
+                Automatically generate a 2D diagram based on the measurements
+                you entered in the form.
               </p>
               <AutoDiagramCanvas
                 jobData={jobData}
@@ -147,7 +149,8 @@ export function DrawingModal({
           <TabsContent value="photo-annotation" className="space-y-4">
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <p className="text-gray-600 mb-4 text-sm">
-                Select or upload a photo and draw annotations to highlight areas of interest.
+                Select or upload a photo and draw annotations to highlight areas
+                of interest.
               </p>
 
               {/* Photo selection */}
@@ -169,7 +172,9 @@ export function DrawingModal({
                       <Upload className="w-4 h-4" />
                       Upload Photo
                     </button>
-                    <span className="text-sm text-gray-500">or select from uploaded files below</span>
+                    <span className="text-sm text-gray-500">
+                      or select from uploaded files below
+                    </span>
                   </div>
 
                   {/* Existing uploaded photos */}
@@ -194,7 +199,9 @@ export function DrawingModal({
                   {imageFiles.length === 0 && !uploadedPhoto && (
                     <div className="text-center py-8 bg-white rounded border border-dashed border-gray-300">
                       <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500">No photos available. Upload a photo to annotate.</p>
+                      <p className="text-gray-500">
+                        No photos available. Upload a photo to annotate.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -204,7 +211,9 @@ export function DrawingModal({
               {selectedPhoto && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Annotating photo</span>
+                    <span className="text-sm text-gray-600">
+                      Annotating photo
+                    </span>
                     <button
                       onClick={() => setSelectedPhoto(null)}
                       className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
@@ -237,7 +246,8 @@ export function DrawingModal({
           <TabsContent value="interactive-builder" className="space-y-4">
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <p className="text-gray-600 mb-4 text-sm">
-                Drag and drop deck components to build your custom plan. Click to select, drag to move, use handles to resize.
+                Drag and drop deck components to build your custom plan. Click
+                to select, drag to move, use handles to resize.
               </p>
               <InteractiveBuilderCanvas
                 onExport={handleExport}
@@ -252,7 +262,9 @@ export function DrawingModal({
         {exportedImage && (
           <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-green-800 font-medium">Drawing exported successfully!</span>
+              <span className="text-green-800 font-medium">
+                Drawing exported successfully!
+              </span>
               <button
                 onClick={handleDownload}
                 className="text-sm text-blue-600 hover:text-blue-700 underline"
@@ -285,5 +297,5 @@ export function DrawingModal({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

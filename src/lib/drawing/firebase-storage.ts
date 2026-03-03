@@ -1,6 +1,11 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage';
 import { storage } from '@/lib/firebase';
-import { EXPORT_PIXEL_RATIO, THUMBNAIL_PIXEL_RATIO } from './constants';
+import { EXPORT_PIXEL_RATIO } from './constants';
 
 /**
  * Upload a drawing image to Firebase Storage
@@ -73,7 +78,10 @@ export async function deleteDrawingImage(
  * @param pixelRatio - Resolution multiplier (2 = 2x resolution)
  * @returns Data URL of the exported image
  */
-export function exportStageToDataURL(stage: any, pixelRatio: number = EXPORT_PIXEL_RATIO): string {
+export function exportStageToDataURL(
+  stage: any,
+  pixelRatio: number = EXPORT_PIXEL_RATIO
+): string {
   return stage.toDataURL({
     pixelRatio,
     mimeType: 'image/png',

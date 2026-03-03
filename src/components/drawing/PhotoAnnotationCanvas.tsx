@@ -1,179 +1,238 @@
-'use client'
+'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react'
-import { Stage, Layer, Line, Rect, Circle, Text, Arrow, Image as KonvaImage, Transformer, Group, RegularPolygon } from 'react-konva'
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
-  Pencil, Square, Circle as CircleIcon, Type, ArrowRight, Eraser, Undo, Redo,
-  Download, MousePointer, Minus, Highlighter, Ruler, MessageSquare, Triangle,
-  Move, ZoomIn, ZoomOut, RotateCcw, Palette, Layers, Grid3X3, Eye, EyeOff,
-  Bold, Italic, AlignLeft, AlignCenter, AlignRight, Copy, Trash2
-} from 'lucide-react'
+  Stage,
+  Layer,
+  Line,
+  Rect,
+  Circle,
+  Text,
+  Arrow,
+  Image as KonvaImage,
+  Transformer,
+  Group,
+  RegularPolygon,
+} from 'react-konva';
+import {
+  Pencil,
+  Square,
+  Circle as CircleIcon,
+  Type,
+  ArrowRight,
+  Undo,
+  Redo,
+  Download,
+  MousePointer,
+  Minus,
+  Highlighter,
+  Ruler,
+  MessageSquare,
+  Triangle,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Grid3X3,
+  Eye,
+  Bold,
+  Italic,
+  Copy,
+  Trash2,
+} from 'lucide-react';
 
 interface Annotation {
-  id: string
-  tool: string
-  points?: number[]
-  x?: number
-  y?: number
-  width?: number
-  height?: number
-  radius?: number
-  text?: string
-  color: string
-  fillColor?: string
-  strokeWidth: number
-  fontSize?: number
-  fontStyle?: string
-  textAlign?: string
-  opacity?: number
-  rotation?: number
-  sides?: number
-  measurement?: { start: { x: number; y: number }; end: { x: number; y: number }; value: string }
-  callout?: { text: string; pointer: { x: number; y: number } }
+  id: string;
+  tool: string;
+  points?: number[];
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  radius?: number;
+  text?: string;
+  color: string;
+  fillColor?: string;
+  strokeWidth: number;
+  fontSize?: number;
+  fontStyle?: string;
+  textAlign?: string;
+  opacity?: number;
+  rotation?: number;
+  sides?: number;
+  measurement?: {
+    start: { x: number; y: number };
+    end: { x: number; y: number };
+    value: string;
+  };
+  callout?: { text: string; pointer: { x: number; y: number } };
 }
 
 interface PhotoAnnotationCanvasProps {
-  photoUrl?: string
-  onExport: (dataURL: string) => void
-  width?: number
-  height?: number
+  photoUrl?: string;
+  onExport: (dataURL: string) => void;
+  width?: number;
+  height?: number;
 }
 
 // Professional color palette
 const COLORS = {
-  primary: ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#14B8A6', '#3B82F6', '#8B5CF6', '#EC4899'],
+  primary: [
+    '#EF4444',
+    '#F97316',
+    '#EAB308',
+    '#22C55E',
+    '#14B8A6',
+    '#3B82F6',
+    '#8B5CF6',
+    '#EC4899',
+  ],
   neutral: ['#FFFFFF', '#F3F4F6', '#9CA3AF', '#4B5563', '#1F2937', '#000000'],
-  transparent: 'transparent'
-}
+  transparent: 'transparent',
+};
 
-const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64]
+const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64];
 
 export function PhotoAnnotationCanvas({
   photoUrl,
   onExport,
   width = 800,
-  height = 600
+  height = 600,
 }: PhotoAnnotationCanvasProps) {
-  const [tool, setTool] = useState<string>('select')
-  const [color, setColor] = useState('#EF4444')
-  const [fillColor, setFillColor] = useState<string>('transparent')
-  const [strokeWidth, setStrokeWidth] = useState(3)
-  const [opacity, setOpacity] = useState(1)
-  const [fontSize, setFontSize] = useState(20)
-  const [fontStyle, setFontStyle] = useState<string>('normal')
-  const [textAlign, setTextAlign] = useState<string>('left')
-  const [annotations, setAnnotations] = useState<Annotation[]>([])
-  const [currentAnnotation, setCurrentAnnotation] = useState<Annotation | null>(null)
-  const [history, setHistory] = useState<Annotation[][]>([[]])
-  const [historyIndex, setHistoryIndex] = useState(0)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [textInput, setTextInput] = useState('')
-  const [showTextInput, setShowTextInput] = useState(false)
-  const [textPosition, setTextPosition] = useState({ x: 0, y: 0 })
-  const [showColorPicker, setShowColorPicker] = useState<'stroke' | 'fill' | null>(null)
-  const [scale, setScale] = useState(1)
-  const [showGrid, setShowGrid] = useState(false)
-  const [measurementStart, setMeasurementStart] = useState<{ x: number; y: number } | null>(null)
-  const [calloutMode, setCalloutMode] = useState<'text' | 'pointer' | null>(null)
-  const [calloutText, setCalloutText] = useState('')
-  const [calloutTextPos, setCalloutTextPos] = useState<{ x: number; y: number } | null>(null)
+  const [tool, setTool] = useState<string>('select');
+  const [color, setColor] = useState('#EF4444');
+  const [fillColor, setFillColor] = useState<string>('transparent');
+  const [strokeWidth, setStrokeWidth] = useState(3);
+  const [opacity, setOpacity] = useState(1);
+  const [fontSize, setFontSize] = useState(20);
+  const [fontStyle, setFontStyle] = useState<string>('normal');
+  const [textAlign, setTextAlign] = useState<string>('left');
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [currentAnnotation, setCurrentAnnotation] = useState<Annotation | null>(
+    null
+  );
+  const [history, setHistory] = useState<Annotation[][]>([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [textInput, setTextInput] = useState('');
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
+  const [showColorPicker, setShowColorPicker] = useState<
+    'stroke' | 'fill' | null
+  >(null);
+  const [scale, setScale] = useState(1);
+  const [showGrid, setShowGrid] = useState(false);
+  const [measurementStart, setMeasurementStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [calloutMode, setCalloutMode] = useState<'text' | 'pointer' | null>(
+    null
+  );
+  const [calloutText, setCalloutText] = useState('');
+  const [calloutTextPos, setCalloutTextPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
-  const stageRef = useRef<any>(null)
-  const transformerRef = useRef<any>(null)
+  const stageRef = useRef<any>(null);
+  const transformerRef = useRef<any>(null);
 
   // Load image when photoUrl changes
   useEffect(() => {
     if (photoUrl) {
-      const img = new window.Image()
-      img.crossOrigin = 'anonymous'
-      img.src = photoUrl
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.src = photoUrl;
       img.onload = () => {
-        setImage(img)
-      }
+        setImage(img);
+      };
     }
-  }, [photoUrl])
+  }, [photoUrl]);
 
   // Update transformer when selection changes
   useEffect(() => {
     if (selectedId && transformerRef.current) {
-      const stage = stageRef.current
-      const selectedNode = stage?.findOne('#' + selectedId)
+      const stage = stageRef.current;
+      const selectedNode = stage?.findOne('#' + selectedId);
       if (selectedNode) {
-        transformerRef.current.nodes([selectedNode])
-        transformerRef.current.getLayer().batchDraw()
+        transformerRef.current.nodes([selectedNode]);
+        transformerRef.current.getLayer().batchDraw();
       }
     } else if (transformerRef.current) {
-      transformerRef.current.nodes([])
+      transformerRef.current.nodes([]);
     }
-  }, [selectedId])
+  }, [selectedId]);
 
-  const saveToHistory = useCallback((newAnnotations: Annotation[]) => {
-    const newHistory = history.slice(0, historyIndex + 1)
-    newHistory.push([...newAnnotations])
-    setHistory(newHistory)
-    setHistoryIndex(newHistory.length - 1)
-  }, [history, historyIndex])
+  const saveToHistory = useCallback(
+    (newAnnotations: Annotation[]) => {
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push([...newAnnotations]);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    },
+    [history, historyIndex]
+  );
 
   const undo = () => {
     if (historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1)
-      setAnnotations([...history[historyIndex - 1]])
-      setSelectedId(null)
+      setHistoryIndex(historyIndex - 1);
+      setAnnotations([...history[historyIndex - 1]]);
+      setSelectedId(null);
     }
-  }
+  };
 
   const redo = () => {
     if (historyIndex < history.length - 1) {
-      setHistoryIndex(historyIndex + 1)
-      setAnnotations([...history[historyIndex + 1]])
+      setHistoryIndex(historyIndex + 1);
+      setAnnotations([...history[historyIndex + 1]]);
     }
-  }
+  };
 
   const handleMouseDown = (e: any) => {
-    const stage = e.target.getStage()
-    const pos = stage.getPointerPosition()
-    const scaledPos = { x: pos.x / scale, y: pos.y / scale }
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+    const scaledPos = { x: pos.x / scale, y: pos.y / scale };
 
     if (tool === 'select') {
-      const clickedOnEmpty = e.target === e.target.getStage()
+      const clickedOnEmpty = e.target === e.target.getStage();
       if (clickedOnEmpty) {
-        setSelectedId(null)
+        setSelectedId(null);
       }
-      return
+      return;
     }
 
     if (tool === 'eraser') {
-      return
+      return;
     }
 
-    const id = Date.now().toString()
+    const id = Date.now().toString();
 
     if (tool === 'text') {
-      setTextPosition(scaledPos)
-      setShowTextInput(true)
-      return
+      setTextPosition(scaledPos);
+      setShowTextInput(true);
+      return;
     }
 
     if (tool === 'callout') {
       if (!calloutMode) {
-        setCalloutTextPos(scaledPos)
-        setCalloutMode('text')
-        setShowTextInput(true)
-        return
+        setCalloutTextPos(scaledPos);
+        setCalloutMode('text');
+        setShowTextInput(true);
+        return;
       }
-      return
+      return;
     }
 
     if (tool === 'measurement') {
       if (!measurementStart) {
-        setMeasurementStart(scaledPos)
+        setMeasurementStart(scaledPos);
       } else {
         // Calculate distance
-        const dx = scaledPos.x - measurementStart.x
-        const dy = scaledPos.y - measurementStart.y
-        const distance = Math.sqrt(dx * dx + dy * dy)
-        const feetValue = (distance / 10).toFixed(1) // Assuming 10 pixels = 1 foot
+        const dx = scaledPos.x - measurementStart.x;
+        const dy = scaledPos.y - measurementStart.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const feetValue = (distance / 10).toFixed(1); // Assuming 10 pixels = 1 foot
 
         const newAnnotation: Annotation = {
           id,
@@ -184,16 +243,16 @@ export function PhotoAnnotationCanvas({
           measurement: {
             start: measurementStart,
             end: scaledPos,
-            value: `${feetValue}'`
-          }
-        }
+            value: `${feetValue}'`,
+          },
+        };
 
-        const newAnnotations = [...annotations, newAnnotation]
-        setAnnotations(newAnnotations)
-        saveToHistory(newAnnotations)
-        setMeasurementStart(null)
+        const newAnnotations = [...annotations, newAnnotation];
+        setAnnotations(newAnnotations);
+        saveToHistory(newAnnotations);
+        setMeasurementStart(null);
       }
-      return
+      return;
     }
 
     const newAnnotation: Annotation = {
@@ -206,75 +265,83 @@ export function PhotoAnnotationCanvas({
       fontSize,
       fontStyle,
       textAlign,
-      ...(tool === 'pen' || tool === 'highlighter' || tool === 'line' || tool === 'arrow'
+      ...(tool === 'pen' ||
+      tool === 'highlighter' ||
+      tool === 'line' ||
+      tool === 'arrow'
         ? { points: [scaledPos.x, scaledPos.y] }
         : tool === 'polygon'
-        ? { x: scaledPos.x, y: scaledPos.y, radius: 0, sides: 6 }
-        : { x: scaledPos.x, y: scaledPos.y, width: 0, height: 0, radius: 0 }
-      ),
-    }
+          ? { x: scaledPos.x, y: scaledPos.y, radius: 0, sides: 6 }
+          : { x: scaledPos.x, y: scaledPos.y, width: 0, height: 0, radius: 0 }),
+    };
 
-    setCurrentAnnotation(newAnnotation)
-  }
+    setCurrentAnnotation(newAnnotation);
+  };
 
   const handleMouseMove = (e: any) => {
-    if (!currentAnnotation) return
+    if (!currentAnnotation) return;
 
-    const stage = e.target.getStage()
-    const pos = stage.getPointerPosition()
-    const scaledPos = { x: pos.x / scale, y: pos.y / scale }
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+    const scaledPos = { x: pos.x / scale, y: pos.y / scale };
 
-    if (currentAnnotation.tool === 'pen' || currentAnnotation.tool === 'highlighter') {
+    if (
+      currentAnnotation.tool === 'pen' ||
+      currentAnnotation.tool === 'highlighter'
+    ) {
       setCurrentAnnotation({
         ...currentAnnotation,
         points: [...(currentAnnotation.points || []), scaledPos.x, scaledPos.y],
-      })
-    } else if (currentAnnotation.tool === 'line' || currentAnnotation.tool === 'arrow') {
-      const points = currentAnnotation.points || []
+      });
+    } else if (
+      currentAnnotation.tool === 'line' ||
+      currentAnnotation.tool === 'arrow'
+    ) {
+      const points = currentAnnotation.points || [];
       setCurrentAnnotation({
         ...currentAnnotation,
         points: [points[0], points[1], scaledPos.x, scaledPos.y],
-      })
+      });
     } else if (currentAnnotation.tool === 'rect') {
       setCurrentAnnotation({
         ...currentAnnotation,
         width: scaledPos.x - (currentAnnotation.x || 0),
         height: scaledPos.y - (currentAnnotation.y || 0),
-      })
+      });
     } else if (currentAnnotation.tool === 'circle') {
-      const dx = scaledPos.x - (currentAnnotation.x || 0)
-      const dy = scaledPos.y - (currentAnnotation.y || 0)
+      const dx = scaledPos.x - (currentAnnotation.x || 0);
+      const dy = scaledPos.y - (currentAnnotation.y || 0);
       setCurrentAnnotation({
         ...currentAnnotation,
         radius: Math.sqrt(dx * dx + dy * dy),
-      })
+      });
     } else if (currentAnnotation.tool === 'polygon') {
-      const dx = scaledPos.x - (currentAnnotation.x || 0)
-      const dy = scaledPos.y - (currentAnnotation.y || 0)
+      const dx = scaledPos.x - (currentAnnotation.x || 0);
+      const dy = scaledPos.y - (currentAnnotation.y || 0);
       setCurrentAnnotation({
         ...currentAnnotation,
         radius: Math.sqrt(dx * dx + dy * dy),
-      })
+      });
     }
-  }
+  };
 
   const handleMouseUp = () => {
     if (currentAnnotation) {
-      const newAnnotations = [...annotations, currentAnnotation]
-      setAnnotations(newAnnotations)
-      saveToHistory(newAnnotations)
-      setCurrentAnnotation(null)
+      const newAnnotations = [...annotations, currentAnnotation];
+      setAnnotations(newAnnotations);
+      saveToHistory(newAnnotations);
+      setCurrentAnnotation(null);
     }
-  }
+  };
 
   const handleTextSubmit = () => {
     if (textInput.trim()) {
       if (calloutMode === 'text' && calloutTextPos) {
-        setCalloutText(textInput)
-        setCalloutMode('pointer')
-        setTextInput('')
-        setShowTextInput(false)
-        return
+        setCalloutText(textInput);
+        setCalloutMode('pointer');
+        setTextInput('');
+        setShowTextInput(false);
+        return;
       }
 
       const newAnnotation: Annotation = {
@@ -289,22 +356,22 @@ export function PhotoAnnotationCanvas({
         fontStyle,
         textAlign,
         opacity,
-      }
-      const newAnnotations = [...annotations, newAnnotation]
-      setAnnotations(newAnnotations)
-      saveToHistory(newAnnotations)
+      };
+      const newAnnotations = [...annotations, newAnnotation];
+      setAnnotations(newAnnotations);
+      saveToHistory(newAnnotations);
     }
-    setTextInput('')
-    setShowTextInput(false)
-    setCalloutMode(null)
-    setCalloutTextPos(null)
-  }
+    setTextInput('');
+    setShowTextInput(false);
+    setCalloutMode(null);
+    setCalloutTextPos(null);
+  };
 
   const handleCalloutPointer = (e: any) => {
     if (calloutMode === 'pointer' && calloutTextPos && calloutText) {
-      const stage = e.target.getStage()
-      const pos = stage.getPointerPosition()
-      const scaledPos = { x: pos.x / scale, y: pos.y / scale }
+      const stage = e.target.getStage();
+      const pos = stage.getPointerPosition();
+      const scaledPos = { x: pos.x / scale, y: pos.y / scale };
 
       const newAnnotation: Annotation = {
         id: Date.now().toString(),
@@ -317,70 +384,70 @@ export function PhotoAnnotationCanvas({
         opacity: 1,
         callout: {
           text: calloutText,
-          pointer: scaledPos
-        }
-      }
+          pointer: scaledPos,
+        },
+      };
 
-      const newAnnotations = [...annotations, newAnnotation]
-      setAnnotations(newAnnotations)
-      saveToHistory(newAnnotations)
-      setCalloutMode(null)
-      setCalloutTextPos(null)
-      setCalloutText('')
-      setTool('select')
+      const newAnnotations = [...annotations, newAnnotation];
+      setAnnotations(newAnnotations);
+      saveToHistory(newAnnotations);
+      setCalloutMode(null);
+      setCalloutTextPos(null);
+      setCalloutText('');
+      setTool('select');
     }
-  }
+  };
 
   const handleDelete = () => {
     if (selectedId) {
-      const newAnnotations = annotations.filter(a => a.id !== selectedId)
-      setAnnotations(newAnnotations)
-      saveToHistory(newAnnotations)
-      setSelectedId(null)
+      const newAnnotations = annotations.filter((a) => a.id !== selectedId);
+      setAnnotations(newAnnotations);
+      saveToHistory(newAnnotations);
+      setSelectedId(null);
     }
-  }
+  };
 
   const handleDuplicate = () => {
     if (selectedId) {
-      const annotation = annotations.find(a => a.id === selectedId)
+      const annotation = annotations.find((a) => a.id === selectedId);
       if (annotation) {
         const newAnnotation = {
           ...annotation,
           id: Date.now().toString(),
           x: (annotation.x || 0) + 20,
           y: (annotation.y || 0) + 20,
-        }
-        const newAnnotations = [...annotations, newAnnotation]
-        setAnnotations(newAnnotations)
-        saveToHistory(newAnnotations)
-        setSelectedId(newAnnotation.id)
+        };
+        const newAnnotations = [...annotations, newAnnotation];
+        setAnnotations(newAnnotations);
+        saveToHistory(newAnnotations);
+        setSelectedId(newAnnotation.id);
       }
     }
-  }
+  };
 
   const handleExport = () => {
     if (stageRef.current) {
       // Temporarily deselect for clean export
-      const prevSelected = selectedId
-      setSelectedId(null)
+      const prevSelected = selectedId;
+      setSelectedId(null);
 
       setTimeout(() => {
-        const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 })
-        onExport(dataURL)
-        setSelectedId(prevSelected)
-      }, 50)
+        const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 });
+        onExport(dataURL);
+        setSelectedId(prevSelected);
+      }, 50);
     }
-  }
+  };
 
   const clearAll = () => {
-    setAnnotations([])
-    saveToHistory([])
-    setSelectedId(null)
-  }
+    setAnnotations([]);
+    saveToHistory([]);
+    setSelectedId(null);
+  };
 
   const renderGrid = () => {
-    const lines = []
-    const gridSize = 20
+    const lines = [];
+    const gridSize = 20;
     for (let i = 0; i <= width / gridSize; i++) {
       lines.push(
         <Line
@@ -390,7 +457,7 @@ export function PhotoAnnotationCanvas({
           strokeWidth={0.5}
           opacity={0.5}
         />
-      )
+      );
     }
     for (let i = 0; i <= height / gridSize; i++) {
       lines.push(
@@ -401,10 +468,10 @@ export function PhotoAnnotationCanvas({
           strokeWidth={0.5}
           opacity={0.5}
         />
-      )
+      );
     }
-    return lines
-  }
+    return lines;
+  };
 
   const renderAnnotation = (annotation: Annotation) => {
     const commonProps = {
@@ -416,7 +483,7 @@ export function PhotoAnnotationCanvas({
       onClick: () => tool === 'select' && setSelectedId(annotation.id),
       onTap: () => tool === 'select' && setSelectedId(annotation.id),
       draggable: tool === 'select',
-    }
+    };
 
     switch (annotation.tool) {
       case 'pen':
@@ -428,7 +495,7 @@ export function PhotoAnnotationCanvas({
             lineJoin="round"
             tension={0.5}
           />
-        )
+        );
       case 'highlighter':
         return (
           <Line
@@ -441,15 +508,11 @@ export function PhotoAnnotationCanvas({
             strokeWidth={annotation.strokeWidth * 4}
             opacity={0.4}
           />
-        )
+        );
       case 'line':
         return (
-          <Line
-            {...commonProps}
-            points={annotation.points}
-            lineCap="round"
-          />
-        )
+          <Line {...commonProps} points={annotation.points} lineCap="round" />
+        );
       case 'arrow':
         return (
           <Arrow
@@ -459,7 +522,7 @@ export function PhotoAnnotationCanvas({
             pointerWidth={12}
             fill={annotation.color}
           />
-        )
+        );
       case 'rect':
         return (
           <Rect
@@ -471,7 +534,7 @@ export function PhotoAnnotationCanvas({
             fill={annotation.fillColor || 'transparent'}
             cornerRadius={2}
           />
-        )
+        );
       case 'circle':
         return (
           <Circle
@@ -481,7 +544,7 @@ export function PhotoAnnotationCanvas({
             radius={annotation.radius}
             fill={annotation.fillColor || 'transparent'}
           />
-        )
+        );
       case 'polygon':
         return (
           <RegularPolygon
@@ -492,7 +555,7 @@ export function PhotoAnnotationCanvas({
             radius={annotation.radius || 0}
             fill={annotation.fillColor || 'transparent'}
           />
-        )
+        );
       case 'text':
         return (
           <Text
@@ -505,12 +568,12 @@ export function PhotoAnnotationCanvas({
             align={annotation.textAlign || 'left'}
             fill={annotation.color}
           />
-        )
+        );
       case 'measurement':
         if (annotation.measurement) {
-          const { start, end, value } = annotation.measurement
-          const midX = (start.x + end.x) / 2
-          const midY = (start.y + end.y) / 2
+          const { start, end, value } = annotation.measurement;
+          const midX = (start.x + end.x) / 2;
+          const midY = (start.y + end.y) / 2;
           return (
             <Group key={annotation.id}>
               <Line
@@ -551,23 +614,27 @@ export function PhotoAnnotationCanvas({
                 fill={annotation.color}
               />
             </Group>
-          )
+          );
         }
-        return null
+        return null;
       case 'callout':
         if (annotation.callout) {
-          const { text, pointer } = annotation.callout
-          const boxWidth = Math.max(text.length * 8 + 20, 80)
-          const boxHeight = 36
+          const { text, pointer } = annotation.callout;
+          const boxWidth = Math.max(text.length * 8 + 20, 80);
+          const boxHeight = 36;
           return (
-            <Group key={annotation.id} draggable={tool === 'select'} onClick={() => tool === 'select' && setSelectedId(annotation.id)}>
+            <Group
+              key={annotation.id}
+              draggable={tool === 'select'}
+              onClick={() => tool === 'select' && setSelectedId(annotation.id)}
+            >
               {/* Arrow from box to pointer */}
               <Arrow
                 points={[
                   (annotation.x || 0) + boxWidth / 2,
                   (annotation.y || 0) + boxHeight,
                   pointer.x,
-                  pointer.y
+                  pointer.y,
                 ]}
                 pointerLength={10}
                 pointerWidth={10}
@@ -600,13 +667,13 @@ export function PhotoAnnotationCanvas({
                 fontStyle="bold"
               />
             </Group>
-          )
+          );
         }
-        return null
+        return null;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const tools = [
     { id: 'select', icon: MousePointer, label: 'Select & Move' },
@@ -620,7 +687,7 @@ export function PhotoAnnotationCanvas({
     { id: 'text', icon: Type, label: 'Text' },
     { id: 'measurement', icon: Ruler, label: 'Measurement' },
     { id: 'callout', icon: MessageSquare, label: 'Callout Box' },
-  ]
+  ];
 
   return (
     <div className="space-y-3">
@@ -633,9 +700,9 @@ export function PhotoAnnotationCanvas({
               <button
                 key={t.id}
                 onClick={() => {
-                  setTool(t.id)
-                  setMeasurementStart(null)
-                  setCalloutMode(null)
+                  setTool(t.id);
+                  setMeasurementStart(null);
+                  setCalloutMode(null);
                 }}
                 className={`p-2 rounded-lg transition-all duration-200 ${
                   tool === t.id
@@ -655,7 +722,11 @@ export function PhotoAnnotationCanvas({
           {/* Stroke Color */}
           <div className="relative">
             <button
-              onClick={() => setShowColorPicker(showColorPicker === 'stroke' ? null : 'stroke')}
+              onClick={() =>
+                setShowColorPicker(
+                  showColorPicker === 'stroke' ? null : 'stroke'
+                )
+              }
               className="flex items-center gap-2 px-3 py-2 bg-slate-900/50 rounded-lg hover:bg-slate-600 transition-colors"
             >
               <div
@@ -670,9 +741,14 @@ export function PhotoAnnotationCanvas({
                   {COLORS.primary.map((c) => (
                     <button
                       key={c}
-                      onClick={() => { setColor(c); setShowColorPicker(null) }}
+                      onClick={() => {
+                        setColor(c);
+                        setShowColorPicker(null);
+                      }}
                       className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                        color === c ? 'border-slate-800 ring-2 ring-blue-400' : 'border-transparent'
+                        color === c
+                          ? 'border-slate-800 ring-2 ring-blue-400'
+                          : 'border-transparent'
                       }`}
                       style={{ backgroundColor: c }}
                     />
@@ -682,9 +758,14 @@ export function PhotoAnnotationCanvas({
                   {COLORS.neutral.map((c) => (
                     <button
                       key={c}
-                      onClick={() => { setColor(c); setShowColorPicker(null) }}
+                      onClick={() => {
+                        setColor(c);
+                        setShowColorPicker(null);
+                      }}
                       className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                        color === c ? 'border-slate-800 ring-2 ring-blue-400' : 'border-slate-300'
+                        color === c
+                          ? 'border-slate-800 ring-2 ring-blue-400'
+                          : 'border-slate-300'
                       }`}
                       style={{ backgroundColor: c }}
                     />
@@ -697,15 +778,22 @@ export function PhotoAnnotationCanvas({
           {/* Fill Color */}
           <div className="relative">
             <button
-              onClick={() => setShowColorPicker(showColorPicker === 'fill' ? null : 'fill')}
+              onClick={() =>
+                setShowColorPicker(showColorPicker === 'fill' ? null : 'fill')
+              }
               className="flex items-center gap-2 px-3 py-2 bg-slate-900/50 rounded-lg hover:bg-slate-600 transition-colors"
             >
               <div
                 className={`w-5 h-5 rounded border-2 border-white shadow-sm ${fillColor === 'transparent' ? 'bg-gradient-to-br from-white to-slate-200' : ''}`}
-                style={{ backgroundColor: fillColor === 'transparent' ? undefined : fillColor }}
+                style={{
+                  backgroundColor:
+                    fillColor === 'transparent' ? undefined : fillColor,
+                }}
               >
                 {fillColor === 'transparent' && (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">/</div>
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                    /
+                  </div>
                 )}
               </div>
               <span className="text-xs text-slate-300">Fill</span>
@@ -713,9 +801,14 @@ export function PhotoAnnotationCanvas({
             {showColorPicker === 'fill' && (
               <div className="absolute top-full left-0 mt-2 p-3 bg-white rounded-xl shadow-xl z-50 border border-slate-200">
                 <button
-                  onClick={() => { setFillColor('transparent'); setShowColorPicker(null) }}
+                  onClick={() => {
+                    setFillColor('transparent');
+                    setShowColorPicker(null);
+                  }}
                   className={`w-full mb-2 px-3 py-1.5 text-sm rounded-lg border-2 ${
-                    fillColor === 'transparent' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
+                    fillColor === 'transparent'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   No Fill
@@ -724,9 +817,14 @@ export function PhotoAnnotationCanvas({
                   {COLORS.primary.map((c) => (
                     <button
                       key={c}
-                      onClick={() => { setFillColor(c); setShowColorPicker(null) }}
+                      onClick={() => {
+                        setFillColor(c);
+                        setShowColorPicker(null);
+                      }}
                       className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                        fillColor === c ? 'border-slate-800 ring-2 ring-blue-400' : 'border-transparent'
+                        fillColor === c
+                          ? 'border-slate-800 ring-2 ring-blue-400'
+                          : 'border-transparent'
                       }`}
                       style={{ backgroundColor: c }}
                     />
@@ -736,9 +834,14 @@ export function PhotoAnnotationCanvas({
                   {COLORS.neutral.map((c) => (
                     <button
                       key={c}
-                      onClick={() => { setFillColor(c); setShowColorPicker(null) }}
+                      onClick={() => {
+                        setFillColor(c);
+                        setShowColorPicker(null);
+                      }}
                       className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                        fillColor === c ? 'border-slate-800 ring-2 ring-blue-400' : 'border-slate-300'
+                        fillColor === c
+                          ? 'border-slate-800 ring-2 ring-blue-400'
+                          : 'border-slate-300'
                       }`}
                       style={{ backgroundColor: c }}
                     />
@@ -762,7 +865,9 @@ export function PhotoAnnotationCanvas({
               onChange={(e) => setStrokeWidth(Number(e.target.value))}
               className="w-20 accent-blue-500"
             />
-            <span className="text-xs text-white font-mono w-5">{strokeWidth}</span>
+            <span className="text-xs text-white font-mono w-5">
+              {strokeWidth}
+            </span>
           </div>
 
           {/* Opacity */}
@@ -777,7 +882,9 @@ export function PhotoAnnotationCanvas({
               onChange={(e) => setOpacity(Number(e.target.value))}
               className="w-16 accent-blue-500"
             />
-            <span className="text-xs text-white font-mono w-6">{Math.round(opacity * 100)}%</span>
+            <span className="text-xs text-white font-mono w-6">
+              {Math.round(opacity * 100)}%
+            </span>
           </div>
 
           {/* Divider */}
@@ -799,7 +906,9 @@ export function PhotoAnnotationCanvas({
             >
               <ZoomIn className="w-4 h-4" />
             </button>
-            <span className="px-2 text-xs text-slate-300 font-mono">{Math.round(scale * 100)}%</span>
+            <span className="px-2 text-xs text-slate-300 font-mono">
+              {Math.round(scale * 100)}%
+            </span>
             <button
               onClick={() => setScale(Math.max(scale - 0.25, 0.5))}
               className="p-2 rounded-lg text-slate-300 hover:bg-slate-600 hover:text-white transition-colors"
@@ -827,19 +936,25 @@ export function PhotoAnnotationCanvas({
                 onChange={(e) => setFontSize(Number(e.target.value))}
                 className="bg-slate-900/50 text-white text-sm rounded-lg px-3 py-1.5 border border-slate-600"
               >
-                {FONT_SIZES.map(size => (
-                  <option key={size} value={size}>{size}px</option>
+                {FONT_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {size}px
+                  </option>
                 ))}
               </select>
               <div className="flex bg-slate-900/50 rounded-lg p-0.5">
                 <button
-                  onClick={() => setFontStyle(fontStyle === 'bold' ? 'normal' : 'bold')}
+                  onClick={() =>
+                    setFontStyle(fontStyle === 'bold' ? 'normal' : 'bold')
+                  }
                   className={`p-1.5 rounded ${fontStyle === 'bold' ? 'bg-blue-500 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
                 >
                   <Bold className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setFontStyle(fontStyle === 'italic' ? 'normal' : 'italic')}
+                  onClick={() =>
+                    setFontStyle(fontStyle === 'italic' ? 'normal' : 'italic')
+                  }
                   className={`p-1.5 rounded ${fontStyle === 'italic' ? 'bg-blue-500 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
                 >
                   <Italic className="w-4 h-4" />
@@ -904,9 +1019,10 @@ export function PhotoAnnotationCanvas({
       </div>
 
       {/* Status Bar */}
-      {(tool === 'measurement' && measurementStart) && (
+      {tool === 'measurement' && measurementStart && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2 rounded-lg text-sm">
-          Click to set the measurement end point. Distance will be calculated in feet.
+          Click to set the measurement end point. Distance will be calculated in
+          feet.
         </div>
       )}
       {calloutMode === 'pointer' && (
@@ -928,12 +1044,20 @@ export function PhotoAnnotationCanvas({
               onChange={(e) => setTextInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
               className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 mb-4 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
-              placeholder={calloutMode === 'text' ? "Enter callout text..." : "Enter text..."}
+              placeholder={
+                calloutMode === 'text'
+                  ? 'Enter callout text...'
+                  : 'Enter text...'
+              }
               autoFocus
             />
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => { setShowTextInput(false); setCalloutMode(null); setCalloutTextPos(null) }}
+                onClick={() => {
+                  setShowTextInput(false);
+                  setCalloutMode(null);
+                  setCalloutTextPos(null);
+                }}
                 className="px-4 py-2 border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
               >
                 Cancel
@@ -1005,9 +1129,9 @@ export function PhotoAnnotationCanvas({
               ref={transformerRef}
               boundBoxFunc={(oldBox, newBox) => {
                 if (newBox.width < 5 || newBox.height < 5) {
-                  return oldBox
+                  return oldBox;
                 }
-                return newBox
+                return newBox;
               }}
               anchorFill="#fff"
               anchorStroke="#3B82F6"
@@ -1023,18 +1147,22 @@ export function PhotoAnnotationCanvas({
 
       {/* Instructions */}
       <div className="text-center text-sm text-slate-500 bg-slate-50 rounded-lg py-2 px-4">
-        {tool === 'select' && 'Click to select objects. Drag to move. Use handles to resize.'}
+        {tool === 'select' &&
+          'Click to select objects. Drag to move. Use handles to resize.'}
         {tool === 'pen' && 'Click and drag to draw freehand lines.'}
-        {tool === 'highlighter' && 'Click and drag to highlight areas with a transparent marker.'}
+        {tool === 'highlighter' &&
+          'Click and drag to highlight areas with a transparent marker.'}
         {tool === 'line' && 'Click and drag to draw a straight line.'}
         {tool === 'arrow' && 'Click and drag to draw an arrow.'}
         {tool === 'rect' && 'Click and drag to draw a rectangle.'}
         {tool === 'circle' && 'Click and drag from center to draw a circle.'}
         {tool === 'polygon' && 'Click and drag to draw a hexagon shape.'}
         {tool === 'text' && 'Click anywhere to add text.'}
-        {tool === 'measurement' && 'Click two points to measure distance. Result shown in feet.'}
-        {tool === 'callout' && 'Click to place text box, then click again to point the arrow.'}
+        {tool === 'measurement' &&
+          'Click two points to measure distance. Result shown in feet.'}
+        {tool === 'callout' &&
+          'Click to place text box, then click again to point the arrow.'}
       </div>
     </div>
-  )
+  );
 }

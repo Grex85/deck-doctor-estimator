@@ -18,70 +18,275 @@ export interface LaborRate {
 // Material Pricing Database
 export const MATERIAL_PRICES: Record<string, MaterialPrice> = {
   // Decking Materials (per linear foot)
-  'Pressure Treated Pine 5/4x6': { name: 'Pressure Treated Pine 5/4x6', unit: 'linear ft', price: 1.85, category: 'Decking' },
-  'Cedar 5/4x6': { name: 'Cedar 5/4x6', unit: 'linear ft', price: 3.25, category: 'Decking' },
-  'Composite (Trex) 5/4x6': { name: 'Composite (Trex) 5/4x6', unit: 'linear ft', price: 4.50, category: 'Decking' },
-  'Composite (Deckorators) 5/4x6': { name: 'Composite (Deckorators) 5/4x6', unit: 'linear ft', price: 4.25, category: 'Decking' },
-  'PVC Decking 5/4x6': { name: 'PVC Decking 5/4x6', unit: 'linear ft', price: 5.00, category: 'Decking' },
+  'Pressure Treated Pine 5/4x6': {
+    name: 'Pressure Treated Pine 5/4x6',
+    unit: 'linear ft',
+    price: 1.85,
+    category: 'Decking',
+  },
+  'Cedar 5/4x6': {
+    name: 'Cedar 5/4x6',
+    unit: 'linear ft',
+    price: 3.25,
+    category: 'Decking',
+  },
+  'Composite (Trex) 5/4x6': {
+    name: 'Composite (Trex) 5/4x6',
+    unit: 'linear ft',
+    price: 4.5,
+    category: 'Decking',
+  },
+  'Composite (Deckorators) 5/4x6': {
+    name: 'Composite (Deckorators) 5/4x6',
+    unit: 'linear ft',
+    price: 4.25,
+    category: 'Decking',
+  },
+  'PVC Decking 5/4x6': {
+    name: 'PVC Decking 5/4x6',
+    unit: 'linear ft',
+    price: 5.0,
+    category: 'Decking',
+  },
 
   // Framing Lumber (per linear foot)
-  '2x6 Pressure Treated': { name: '2x6 Pressure Treated', unit: 'linear ft', price: 1.25, category: 'Framing' },
-  '2x8 Pressure Treated': { name: '2x8 Pressure Treated', unit: 'linear ft', price: 1.75, category: 'Framing' },
-  '2x10 Pressure Treated': { name: '2x10 Pressure Treated', unit: 'linear ft', price: 2.25, category: 'Framing' },
-  '2x12 Pressure Treated': { name: '2x12 Pressure Treated', unit: 'linear ft', price: 2.75, category: 'Framing' },
-  '4x4 Pressure Treated': { name: '4x4 Pressure Treated', unit: 'linear ft', price: 3.50, category: 'Posts' },
-  '6x6 Pressure Treated': { name: '6x6 Pressure Treated', unit: 'linear ft', price: 8.50, category: 'Posts' },
+  '2x6 Pressure Treated': {
+    name: '2x6 Pressure Treated',
+    unit: 'linear ft',
+    price: 1.25,
+    category: 'Framing',
+  },
+  '2x8 Pressure Treated': {
+    name: '2x8 Pressure Treated',
+    unit: 'linear ft',
+    price: 1.75,
+    category: 'Framing',
+  },
+  '2x10 Pressure Treated': {
+    name: '2x10 Pressure Treated',
+    unit: 'linear ft',
+    price: 2.25,
+    category: 'Framing',
+  },
+  '2x12 Pressure Treated': {
+    name: '2x12 Pressure Treated',
+    unit: 'linear ft',
+    price: 2.75,
+    category: 'Framing',
+  },
+  '4x4 Pressure Treated': {
+    name: '4x4 Pressure Treated',
+    unit: 'linear ft',
+    price: 3.5,
+    category: 'Posts',
+  },
+  '6x6 Pressure Treated': {
+    name: '6x6 Pressure Treated',
+    unit: 'linear ft',
+    price: 8.5,
+    category: 'Posts',
+  },
 
   // Beams (per linear foot)
-  '2x8 Beam': { name: '2x8 Beam', unit: 'linear ft', price: 1.75, category: 'Beams' },
-  '2x10 Beam': { name: '2x10 Beam', unit: 'linear ft', price: 2.25, category: 'Beams' },
-  '2x12 Beam': { name: '2x12 Beam', unit: 'linear ft', price: 2.75, category: 'Beams' },
-  '4x6 Beam': { name: '4x6 Beam', unit: 'linear ft', price: 6.00, category: 'Beams' },
-  '6x6 Beam': { name: '6x6 Beam', unit: 'linear ft', price: 8.50, category: 'Beams' },
+  '2x8 Beam': {
+    name: '2x8 Beam',
+    unit: 'linear ft',
+    price: 1.75,
+    category: 'Beams',
+  },
+  '2x10 Beam': {
+    name: '2x10 Beam',
+    unit: 'linear ft',
+    price: 2.25,
+    category: 'Beams',
+  },
+  '2x12 Beam': {
+    name: '2x12 Beam',
+    unit: 'linear ft',
+    price: 2.75,
+    category: 'Beams',
+  },
+  '4x6 Beam': {
+    name: '4x6 Beam',
+    unit: 'linear ft',
+    price: 6.0,
+    category: 'Beams',
+  },
+  '6x6 Beam': {
+    name: '6x6 Beam',
+    unit: 'linear ft',
+    price: 8.5,
+    category: 'Beams',
+  },
 
   // Hardware (per unit)
-  'Deck Screw': { name: 'Deck Screw', unit: 'each', price: 0.05, category: 'Hardware' },
-  'Single Joist Hanger': { name: 'Single Joist Hanger', unit: 'each', price: 1.25, category: 'Hardware' },
-  'Double Joist Hanger': { name: 'Double Joist Hanger', unit: 'each', price: 2.50, category: 'Hardware' },
-  'Joist Hanger Nail': { name: 'Joist Hanger Nail', unit: 'each', price: 0.02, category: 'Hardware' },
-  'Galvanized Bolt': { name: 'Galvanized Bolt', unit: 'each', price: 0.75, category: 'Hardware' },
-  'Post Base': { name: 'Post Base', unit: 'each', price: 8.50, category: 'Hardware' },
-  'Hidden Fastener': { name: 'Hidden Fastener', unit: 'each', price: 0.35, category: 'Hardware' },
+  'Deck Screw': {
+    name: 'Deck Screw',
+    unit: 'each',
+    price: 0.05,
+    category: 'Hardware',
+  },
+  'Single Joist Hanger': {
+    name: 'Single Joist Hanger',
+    unit: 'each',
+    price: 1.25,
+    category: 'Hardware',
+  },
+  'Double Joist Hanger': {
+    name: 'Double Joist Hanger',
+    unit: 'each',
+    price: 2.5,
+    category: 'Hardware',
+  },
+  'Joist Hanger Nail': {
+    name: 'Joist Hanger Nail',
+    unit: 'each',
+    price: 0.02,
+    category: 'Hardware',
+  },
+  'Galvanized Bolt': {
+    name: 'Galvanized Bolt',
+    unit: 'each',
+    price: 0.75,
+    category: 'Hardware',
+  },
+  'Post Base': {
+    name: 'Post Base',
+    unit: 'each',
+    price: 8.5,
+    category: 'Hardware',
+  },
+  'Hidden Fastener': {
+    name: 'Hidden Fastener',
+    unit: 'each',
+    price: 0.35,
+    category: 'Hardware',
+  },
 
   // Concrete (per unit)
-  'Concrete Footing': { name: 'Concrete Footing', unit: 'each', price: 45.00, category: 'Concrete' },
-  'Concrete (cubic yard)': { name: 'Concrete (cubic yard)', unit: 'cubic yard', price: 150.00, category: 'Concrete' },
+  'Concrete Footing': {
+    name: 'Concrete Footing',
+    unit: 'each',
+    price: 45.0,
+    category: 'Concrete',
+  },
+  'Concrete (cubic yard)': {
+    name: 'Concrete (cubic yard)',
+    unit: 'cubic yard',
+    price: 150.0,
+    category: 'Concrete',
+  },
 
   // Railing (per linear foot)
-  'Pressure Treated Railing': { name: 'Pressure Treated Railing', unit: 'linear ft', price: 12.00, category: 'Railing' },
-  'Cedar Railing': { name: 'Cedar Railing', unit: 'linear ft', price: 18.00, category: 'Railing' },
-  'Composite Railing': { name: 'Composite Railing', unit: 'linear ft', price: 25.00, category: 'Railing' },
-  'Aluminum Railing': { name: 'Aluminum Railing', unit: 'linear ft', price: 35.00, category: 'Railing' },
-  'Cable Railing': { name: 'Cable Railing', unit: 'linear ft', price: 45.00, category: 'Railing' },
+  'Pressure Treated Railing': {
+    name: 'Pressure Treated Railing',
+    unit: 'linear ft',
+    price: 12.0,
+    category: 'Railing',
+  },
+  'Cedar Railing': {
+    name: 'Cedar Railing',
+    unit: 'linear ft',
+    price: 18.0,
+    category: 'Railing',
+  },
+  'Composite Railing': {
+    name: 'Composite Railing',
+    unit: 'linear ft',
+    price: 25.0,
+    category: 'Railing',
+  },
+  'Aluminum Railing': {
+    name: 'Aluminum Railing',
+    unit: 'linear ft',
+    price: 35.0,
+    category: 'Railing',
+  },
+  'Cable Railing': {
+    name: 'Cable Railing',
+    unit: 'linear ft',
+    price: 45.0,
+    category: 'Railing',
+  },
 
   // Stairs (per stair)
-  'Stair Stringer': { name: 'Stair Stringer', unit: 'each', price: 25.00, category: 'Stairs' },
-  'Stair Tread': { name: 'Stair Tread', unit: 'each', price: 8.50, category: 'Stairs' },
-  'Stair Riser': { name: 'Stair Riser', unit: 'each', price: 6.00, category: 'Stairs' },
+  'Stair Stringer': {
+    name: 'Stair Stringer',
+    unit: 'each',
+    price: 25.0,
+    category: 'Stairs',
+  },
+  'Stair Tread': {
+    name: 'Stair Tread',
+    unit: 'each',
+    price: 8.5,
+    category: 'Stairs',
+  },
+  'Stair Riser': {
+    name: 'Stair Riser',
+    unit: 'each',
+    price: 6.0,
+    category: 'Stairs',
+  },
 };
 
 // Crew Rates
 export const CREW_RATES = {
-  crew1: { name: 'Crew 1 (Standard)', ratePerHour: 95.00 },
-  crew2: { name: 'Crew 2 (Premium)', ratePerHour: 166.00 },
+  crew1: { name: 'Crew 1 (Standard)', ratePerHour: 95.0 },
+  crew2: { name: 'Crew 2 (Premium)', ratePerHour: 166.0 },
 };
 
 // Labor Rates (using Crew 1 as default base rate)
 export const LABOR_RATES: Record<string, LaborRate> = {
-  'General Framing': { name: 'General Framing', ratePerHour: 95.00, ratePerUnit: 8.50, unit: 'sq ft' },
-  'Decking Installation': { name: 'Decking Installation', ratePerHour: 95.00, ratePerUnit: 6.00, unit: 'sq ft' },
-  'Railing Installation': { name: 'Railing Installation', ratePerHour: 95.00, ratePerUnit: 15.00, unit: 'linear ft' },
-  'Stair Construction': { name: 'Stair Construction', ratePerHour: 95.00, ratePerUnit: 125.00, unit: 'stair' },
-  'Concrete Work': { name: 'Concrete Work', ratePerHour: 95.00, ratePerUnit: 75.00, unit: 'footing' },
-  'Demolition': { name: 'Demolition', ratePerHour: 95.00, ratePerUnit: 5.00, unit: 'sq ft' },
-  'Refinishing': { name: 'Refinishing', ratePerHour: 95.00, ratePerUnit: 3.50, unit: 'sq ft' },
-  'Pergola Construction': { name: 'Pergola Construction', ratePerHour: 95.00 },
-  'Painting/Staining': { name: 'Painting/Staining', ratePerHour: 95.00, ratePerUnit: 2.50, unit: 'sq ft' },
+  'General Framing': {
+    name: 'General Framing',
+    ratePerHour: 95.0,
+    ratePerUnit: 8.5,
+    unit: 'sq ft',
+  },
+  'Decking Installation': {
+    name: 'Decking Installation',
+    ratePerHour: 95.0,
+    ratePerUnit: 6.0,
+    unit: 'sq ft',
+  },
+  'Railing Installation': {
+    name: 'Railing Installation',
+    ratePerHour: 95.0,
+    ratePerUnit: 15.0,
+    unit: 'linear ft',
+  },
+  'Stair Construction': {
+    name: 'Stair Construction',
+    ratePerHour: 95.0,
+    ratePerUnit: 125.0,
+    unit: 'stair',
+  },
+  'Concrete Work': {
+    name: 'Concrete Work',
+    ratePerHour: 95.0,
+    ratePerUnit: 75.0,
+    unit: 'footing',
+  },
+  Demolition: {
+    name: 'Demolition',
+    ratePerHour: 95.0,
+    ratePerUnit: 5.0,
+    unit: 'sq ft',
+  },
+  Refinishing: {
+    name: 'Refinishing',
+    ratePerHour: 95.0,
+    ratePerUnit: 3.5,
+    unit: 'sq ft',
+  },
+  'Pergola Construction': { name: 'Pergola Construction', ratePerHour: 95.0 },
+  'Painting/Staining': {
+    name: 'Painting/Staining',
+    ratePerHour: 95.0,
+    ratePerUnit: 2.5,
+    unit: 'sq ft',
+  },
 };
 
 // Markup and Overhead
@@ -91,8 +296,8 @@ export const PRICING_FACTORS = {
   materialMarkup: 0.43, // 43% markup on materials
   overhead: 0.18, // 18% overhead (part of the 1/3 for overhead+profit)
   profit: 0.15, // 15% profit margin (10-20% range, using middle)
-  permitFee: 3500.00, // Permit fee when required
-  wasteFactor: 0.10, // 10% waste allowance for materials
+  permitFee: 3500.0, // Permit fee when required
+  wasteFactor: 0.1, // 10% waste allowance for materials
 };
 
 // Cost Calculation Functions
@@ -125,7 +330,13 @@ export interface CostBreakdown {
 export function calculateMaterialCost(
   item: string,
   quantity: number
-): { item: string; quantity: number; unit: string; unitPrice: number; total: number } | null {
+): {
+  item: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total: number;
+} | null {
   const material = MATERIAL_PRICES[item];
   if (!material) return null;
 
@@ -166,20 +377,24 @@ export function calculateProjectCost(
 ): CostBreakdown {
   // Calculate itemized materials
   const itemizedMaterials = materials
-    .map(m => calculateMaterialCost(m.item, m.quantity))
+    .map((m) => calculateMaterialCost(m.item, m.quantity))
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
-  const materialsCost = itemizedMaterials.reduce((sum, item) => sum + item.total, 0);
+  const materialsCost = itemizedMaterials.reduce(
+    (sum, item) => sum + item.total,
+    0
+  );
 
   // Calculate itemized labor
   const itemizedLabor = labor
-    .map(l => calculateLaborCost(l.task, l.units))
+    .map((l) => calculateLaborCost(l.task, l.units))
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
   const laborCost = itemizedLabor.reduce((sum, item) => sum + item.total, 0);
 
   // Apply markup to materials
-  const materialsWithMarkup = materialsCost * (1 + PRICING_FACTORS.materialMarkup);
+  const materialsWithMarkup =
+    materialsCost * (1 + PRICING_FACTORS.materialMarkup);
 
   // Subtotal before overhead and profit
   const subtotal = materialsWithMarkup + laborCost;
@@ -190,7 +405,8 @@ export function calculateProjectCost(
 
   // Calculate total
   const permitFee = permitRequired ? PRICING_FACTORS.permitFee : 0;
-  const totalEstimate = subtotal + overhead + profit + permitFee + painInTheAssCharge;
+  const totalEstimate =
+    subtotal + overhead + profit + permitFee + painInTheAssCharge;
 
   return {
     materials: Math.round(materialsCost * 100) / 100,
@@ -216,8 +432,10 @@ export function getMaterialPrice(materialName: string): MaterialPrice | null {
 
   // Fuzzy match (case-insensitive, partial match)
   const normalized = materialName.toLowerCase();
-  const match = Object.values(MATERIAL_PRICES).find(m =>
-    m.name.toLowerCase().includes(normalized) || normalized.includes(m.name.toLowerCase())
+  const match = Object.values(MATERIAL_PRICES).find(
+    (m) =>
+      m.name.toLowerCase().includes(normalized) ||
+      normalized.includes(m.name.toLowerCase())
   );
 
   return match || null;
@@ -249,7 +467,10 @@ export function estimateDeckCost(params: {
 
   // Framing
   if (params.joistLinearFeet > 0) {
-    materials.push({ item: '2x8 Pressure Treated', quantity: params.joistLinearFeet });
+    materials.push({
+      item: '2x8 Pressure Treated',
+      quantity: params.joistLinearFeet,
+    });
   }
 
   if (params.beamLinearFeet > 0) {
@@ -257,7 +478,10 @@ export function estimateDeckCost(params: {
   }
 
   if (params.posts > 0) {
-    materials.push({ item: '6x6 Pressure Treated', quantity: params.posts * 8 }); // 8ft posts
+    materials.push({
+      item: '6x6 Pressure Treated',
+      quantity: params.posts * 8,
+    }); // 8ft posts
     materials.push({ item: 'Concrete Footing', quantity: params.posts });
     labor.push({ task: 'Concrete Work', units: params.posts });
   }
@@ -270,7 +494,10 @@ export function estimateDeckCost(params: {
   if (params.railingLinearFeet > 0 && params.railingMaterial) {
     const railingKey = `${params.railingMaterial} Railing`;
     materials.push({ item: railingKey, quantity: params.railingLinearFeet });
-    labor.push({ task: 'Railing Installation', units: params.railingLinearFeet });
+    labor.push({
+      task: 'Railing Installation',
+      units: params.railingLinearFeet,
+    });
   }
 
   // Stairs
@@ -280,5 +507,10 @@ export function estimateDeckCost(params: {
     labor.push({ task: 'Stair Construction', units: params.stairs });
   }
 
-  return calculateProjectCost(materials, labor, params.permitRequired, params.painInTheAssCharge);
+  return calculateProjectCost(
+    materials,
+    labor,
+    params.permitRequired,
+    params.painInTheAssCharge
+  );
 }

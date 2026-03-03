@@ -1,94 +1,229 @@
-'use client'
+'use client';
 
-import React, { useRef, useState, useCallback } from 'react'
-import { Stage, Layer, Rect, Line, Text, Group, Circle, Arrow, Shape } from 'react-konva'
+import React, { useRef, useState, useCallback } from 'react';
 import {
-  Download, RotateCw, Trash2, ZoomIn, ZoomOut, Grid, Plus, Copy, Layers,
-  Move, FlipHorizontal, FlipVertical, Lock, Unlock, Eye, EyeOff, Palette,
-  Home, Square, CircleDot, Fence, Footprints, Sofa, Flame, Waves, TreePine
-} from 'lucide-react'
+  Stage,
+  Layer,
+  Rect,
+  Line,
+  Text,
+  Group,
+  Circle,
+  Arrow,
+} from 'react-konva';
+import {
+  Download,
+  RotateCw,
+  Trash2,
+  ZoomIn,
+  ZoomOut,
+  Grid,
+  Copy,
+  Lock,
+  Unlock,
+  Layers,
+  Home,
+  Square,
+  CircleDot,
+  Fence,
+  Footprints,
+  Sofa,
+  Flame,
+  Waves,
+  TreePine,
+} from 'lucide-react';
 
 interface DeckComponent {
-  id: string
-  type: ComponentType
-  x: number
-  y: number
-  width: number
-  height: number
-  rotation: number
-  color: string
-  material: Material
-  label?: string
-  locked?: boolean
-  visible?: boolean
-  zIndex?: number
+  id: string;
+  type: ComponentType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  color: string;
+  material: Material;
+  label?: string;
+  locked?: boolean;
+  visible?: boolean;
+  zIndex?: number;
 }
 
-type ComponentType = 'deck' | 'stairs' | 'railing' | 'post' | 'beam' | 'landing' |
-  'pergola' | 'planter' | 'bench' | 'firepit' | 'hottub' | 'tree' | 'door' | 'window'
+type ComponentType =
+  | 'deck'
+  | 'stairs'
+  | 'railing'
+  | 'post'
+  | 'beam'
+  | 'landing'
+  | 'pergola'
+  | 'planter'
+  | 'bench'
+  | 'firepit'
+  | 'hottub'
+  | 'tree'
+  | 'door'
+  | 'window';
 
-type Material = 'wood' | 'composite' | 'metal' | 'concrete' | 'stone'
+type Material = 'wood' | 'composite' | 'metal' | 'concrete' | 'stone';
 
 interface InteractiveBuilderCanvasProps {
-  onExport: (dataURL: string) => void
-  width?: number
-  height?: number
-  initialComponents?: DeckComponent[]
+  onExport: (dataURL: string) => void;
+  width?: number;
+  height?: number;
+  initialComponents?: DeckComponent[];
 }
 
-const GRID_SIZE = 20
-const SCALE_FACTOR = 10 // 1 foot = 10 pixels
+const GRID_SIZE = 20;
+const SCALE_FACTOR = 10; // 1 foot = 10 pixels
 
 // Material colors with variations
-const MATERIAL_COLORS: Record<Material, { primary: string; secondary: string; accent: string }> = {
+const MATERIAL_COLORS: Record<
+  Material,
+  { primary: string; secondary: string; accent: string }
+> = {
   wood: { primary: '#8B4513', secondary: '#A0522D', accent: '#D2691E' },
   composite: { primary: '#6B7280', secondary: '#9CA3AF', accent: '#4B5563' },
   metal: { primary: '#374151', secondary: '#6B7280', accent: '#1F2937' },
   concrete: { primary: '#9CA3AF', secondary: '#D1D5DB', accent: '#6B7280' },
   stone: { primary: '#78716C', secondary: '#A8A29E', accent: '#57534E' },
-}
+};
 
 // Custom Minus icon component (defined before use)
 const MinusIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
-)
+);
 
-const componentTemplates: Record<ComponentType, { width: number; height: number; material: Material; label: string; icon: any }> = {
-  deck: { width: 120, height: 100, material: 'wood', label: 'Deck', icon: Square },
-  stairs: { width: 40, height: 60, material: 'wood', label: 'Stairs', icon: Footprints },
-  railing: { width: 100, height: 8, material: 'wood', label: 'Railing', icon: Fence },
-  post: { width: 12, height: 12, material: 'wood', label: 'Post', icon: CircleDot },
-  beam: { width: 120, height: 6, material: 'wood', label: 'Beam', icon: MinusIcon },
-  landing: { width: 50, height: 50, material: 'concrete', label: 'Landing', icon: Square },
-  pergola: { width: 80, height: 80, material: 'wood', label: 'Pergola', icon: Grid },
-  planter: { width: 30, height: 30, material: 'wood', label: 'Planter', icon: TreePine },
-  bench: { width: 60, height: 20, material: 'wood', label: 'Bench', icon: Sofa },
-  firepit: { width: 40, height: 40, material: 'stone', label: 'Fire Pit', icon: Flame },
-  hottub: { width: 70, height: 70, material: 'composite', label: 'Hot Tub', icon: Waves },
-  tree: { width: 40, height: 40, material: 'wood', label: 'Tree', icon: TreePine },
+const componentTemplates: Record<
+  ComponentType,
+  {
+    width: number;
+    height: number;
+    material: Material;
+    label: string;
+    icon: any;
+  }
+> = {
+  deck: {
+    width: 120,
+    height: 100,
+    material: 'wood',
+    label: 'Deck',
+    icon: Square,
+  },
+  stairs: {
+    width: 40,
+    height: 60,
+    material: 'wood',
+    label: 'Stairs',
+    icon: Footprints,
+  },
+  railing: {
+    width: 100,
+    height: 8,
+    material: 'wood',
+    label: 'Railing',
+    icon: Fence,
+  },
+  post: {
+    width: 12,
+    height: 12,
+    material: 'wood',
+    label: 'Post',
+    icon: CircleDot,
+  },
+  beam: {
+    width: 120,
+    height: 6,
+    material: 'wood',
+    label: 'Beam',
+    icon: MinusIcon,
+  },
+  landing: {
+    width: 50,
+    height: 50,
+    material: 'concrete',
+    label: 'Landing',
+    icon: Square,
+  },
+  pergola: {
+    width: 80,
+    height: 80,
+    material: 'wood',
+    label: 'Pergola',
+    icon: Grid,
+  },
+  planter: {
+    width: 30,
+    height: 30,
+    material: 'wood',
+    label: 'Planter',
+    icon: TreePine,
+  },
+  bench: {
+    width: 60,
+    height: 20,
+    material: 'wood',
+    label: 'Bench',
+    icon: Sofa,
+  },
+  firepit: {
+    width: 40,
+    height: 40,
+    material: 'stone',
+    label: 'Fire Pit',
+    icon: Flame,
+  },
+  hottub: {
+    width: 70,
+    height: 70,
+    material: 'composite',
+    label: 'Hot Tub',
+    icon: Waves,
+  },
+  tree: {
+    width: 40,
+    height: 40,
+    material: 'wood',
+    label: 'Tree',
+    icon: TreePine,
+  },
   door: { width: 36, height: 8, material: 'wood', label: 'Door', icon: Home },
-  window: { width: 30, height: 6, material: 'metal', label: 'Window', icon: Square },
-}
+  window: {
+    width: 30,
+    height: 6,
+    material: 'metal',
+    label: 'Window',
+    icon: Square,
+  },
+};
 
 export function InteractiveBuilderCanvas({
   onExport,
   width = 800,
   height = 600,
-  initialComponents = []
+  initialComponents = [],
 }: InteractiveBuilderCanvasProps) {
-  const [components, setComponents] = useState<DeckComponent[]>(initialComponents)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [showGrid, setShowGrid] = useState(true)
-  const [scale, setScale] = useState(1)
-  const [showColorPicker, setShowColorPicker] = useState(false)
-  const [showMaterialPicker, setShowMaterialPicker] = useState(false)
-  const stageRef = useRef<any>(null)
+  const [components, setComponents] =
+    useState<DeckComponent[]>(initialComponents);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showGrid, setShowGrid] = useState(true);
+  const [scale, setScale] = useState(1);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showMaterialPicker, setShowMaterialPicker] = useState(false);
+  const stageRef = useRef<any>(null);
 
   const addComponent = (type: ComponentType) => {
-    const template = componentTemplates[type]
-    const colors = MATERIAL_COLORS[template.material]
+    const template = componentTemplates[type];
+    const colors = MATERIAL_COLORS[template.material];
     const newComponent: DeckComponent = {
       id: Date.now().toString(),
       type,
@@ -103,25 +238,28 @@ export function InteractiveBuilderCanvas({
       locked: false,
       visible: true,
       zIndex: components.length,
-    }
-    setComponents([...components, newComponent])
-    setSelectedId(newComponent.id)
-  }
+    };
+    setComponents([...components, newComponent]);
+    setSelectedId(newComponent.id);
+  };
 
-  const updateComponent = useCallback((id: string, updates: Partial<DeckComponent>) => {
-    setComponents(prev => prev.map(c =>
-      c.id === id ? { ...c, ...updates } : c
-    ))
-  }, [])
+  const updateComponent = useCallback(
+    (id: string, updates: Partial<DeckComponent>) => {
+      setComponents((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
+      );
+    },
+    []
+  );
 
   const deleteComponent = (id: string) => {
-    setComponents(components.filter(c => c.id !== id))
-    setSelectedId(null)
-  }
+    setComponents(components.filter((c) => c.id !== id));
+    setSelectedId(null);
+  };
 
   const duplicateComponent = () => {
-    if (!selectedId) return
-    const component = components.find(c => c.id === selectedId)
+    if (!selectedId) return;
+    const component = components.find((c) => c.id === selectedId);
     if (component) {
       const newComponent = {
         ...component,
@@ -129,75 +267,75 @@ export function InteractiveBuilderCanvas({
         x: component.x + 30,
         y: component.y + 30,
         zIndex: components.length,
-      }
-      setComponents([...components, newComponent])
-      setSelectedId(newComponent.id)
+      };
+      setComponents([...components, newComponent]);
+      setSelectedId(newComponent.id);
     }
-  }
+  };
 
   const rotateComponent = (id: string) => {
-    const component = components.find(c => c.id === id)
+    const component = components.find((c) => c.id === id);
     if (component && !component.locked) {
-      updateComponent(id, { rotation: (component.rotation + 90) % 360 })
+      updateComponent(id, { rotation: (component.rotation + 90) % 360 });
     }
-  }
+  };
 
   const toggleLock = (id: string) => {
-    const component = components.find(c => c.id === id)
+    const component = components.find((c) => c.id === id);
     if (component) {
-      updateComponent(id, { locked: !component.locked })
+      updateComponent(id, { locked: !component.locked });
     }
-  }
+  };
 
   const toggleVisibility = (id: string) => {
-    const component = components.find(c => c.id === id)
+    const component = components.find((c) => c.id === id);
     if (component) {
-      updateComponent(id, { visible: !component.visible })
+      updateComponent(id, { visible: !component.visible });
     }
-  }
+  };
 
   const bringToFront = (id: string) => {
-    const maxZ = Math.max(...components.map(c => c.zIndex || 0))
-    updateComponent(id, { zIndex: maxZ + 1 })
-  }
+    const maxZ = Math.max(...components.map((c) => c.zIndex || 0));
+    updateComponent(id, { zIndex: maxZ + 1 });
+  };
 
   const sendToBack = (id: string) => {
-    const minZ = Math.min(...components.map(c => c.zIndex || 0))
-    updateComponent(id, { zIndex: minZ - 1 })
-  }
+    const minZ = Math.min(...components.map((c) => c.zIndex || 0));
+    updateComponent(id, { zIndex: minZ - 1 });
+  };
 
   const snapToGrid = (value: number) => {
-    return Math.round(value / GRID_SIZE) * GRID_SIZE
-  }
+    return Math.round(value / GRID_SIZE) * GRID_SIZE;
+  };
 
   const handleDragEnd = (id: string, e: any) => {
-    const component = components.find(c => c.id === id)
-    if (component?.locked) return
+    const component = components.find((c) => c.id === id);
+    if (component?.locked) return;
 
-    const node = e.target
+    const node = e.target;
     updateComponent(id, {
       x: snapToGrid(node.x()),
       y: snapToGrid(node.y()),
-    })
-  }
+    });
+  };
 
   const handleExport = () => {
     if (stageRef.current) {
-      const prevSelected = selectedId
-      setSelectedId(null)
+      const prevSelected = selectedId;
+      setSelectedId(null);
 
       setTimeout(() => {
-        const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 })
-        onExport(dataURL)
-        setSelectedId(prevSelected)
-      }, 100)
+        const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 });
+        onExport(dataURL);
+        setSelectedId(prevSelected);
+      }, 100);
     }
-  }
+  };
 
   const renderGrid = () => {
-    const lines = []
+    const lines = [];
     // Major grid lines (every 5 feet)
-    const majorGridSize = GRID_SIZE * 5
+    const majorGridSize = GRID_SIZE * 5;
     for (let i = 0; i <= width / majorGridSize; i++) {
       lines.push(
         <Line
@@ -206,7 +344,7 @@ export function InteractiveBuilderCanvas({
           stroke="#c0c0c0"
           strokeWidth={1}
         />
-      )
+      );
     }
     for (let i = 0; i <= height / majorGridSize; i++) {
       lines.push(
@@ -216,7 +354,7 @@ export function InteractiveBuilderCanvas({
           stroke="#c0c0c0"
           strokeWidth={1}
         />
-      )
+      );
     }
     // Minor grid lines
     for (let i = 0; i <= width / GRID_SIZE; i++) {
@@ -227,7 +365,7 @@ export function InteractiveBuilderCanvas({
           stroke="#e8e8e8"
           strokeWidth={0.5}
         />
-      )
+      );
     }
     for (let i = 0; i <= height / GRID_SIZE; i++) {
       lines.push(
@@ -237,14 +375,20 @@ export function InteractiveBuilderCanvas({
           stroke="#e8e8e8"
           strokeWidth={0.5}
         />
-      )
+      );
     }
-    return lines
-  }
+    return lines;
+  };
 
-  const renderWoodGrain = (x: number, y: number, w: number, h: number, color: string) => {
-    const grainLines = []
-    const lineCount = Math.floor(h / 4)
+  const renderWoodGrain = (
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    color: string
+  ) => {
+    const grainLines = [];
+    const lineCount = Math.floor(h / 4);
     for (let i = 0; i < lineCount; i++) {
       grainLines.push(
         <Line
@@ -254,16 +398,16 @@ export function InteractiveBuilderCanvas({
           strokeWidth={0.5}
           opacity={0.3}
         />
-      )
+      );
     }
-    return grainLines
-  }
+    return grainLines;
+  };
 
   const renderComponent = (component: DeckComponent) => {
-    if (!component.visible) return null
+    if (!component.visible) return null;
 
-    const isSelected = selectedId === component.id
-    const colors = MATERIAL_COLORS[component.material]
+    const isSelected = selectedId === component.id;
+    const colors = MATERIAL_COLORS[component.material];
 
     const commonGroupProps = {
       key: component.id,
@@ -274,7 +418,7 @@ export function InteractiveBuilderCanvas({
       onClick: () => setSelectedId(component.id),
       onTap: () => setSelectedId(component.id),
       onDragEnd: (e: any) => handleDragEnd(component.id, e),
-    }
+    };
 
     const renderComponentShape = () => {
       switch (component.type) {
@@ -296,15 +440,17 @@ export function InteractiveBuilderCanvas({
                 shadowOffsetY={3}
               />
               {/* Decking board lines */}
-              {Array.from({ length: Math.floor(component.height / 8) }).map((_, i) => (
-                <Line
-                  key={`deck-board-${i}`}
-                  points={[2, i * 8 + 4, component.width - 2, i * 8 + 4]}
-                  stroke={colors.secondary}
-                  strokeWidth={1}
-                  opacity={0.4}
-                />
-              ))}
+              {Array.from({ length: Math.floor(component.height / 8) }).map(
+                (_, i) => (
+                  <Line
+                    key={`deck-board-${i}`}
+                    points={[2, i * 8 + 4, component.width - 2, i * 8 + 4]}
+                    stroke={colors.secondary}
+                    strokeWidth={1}
+                    opacity={0.4}
+                  />
+                )
+              )}
               {/* Highlight edge */}
               <Line
                 points={[2, 2, component.width - 2, 2]}
@@ -313,10 +459,10 @@ export function InteractiveBuilderCanvas({
                 opacity={0.3}
               />
             </>
-          )
+          );
 
         case 'stairs':
-          const stepCount = Math.floor(component.height / 12)
+          const stepCount = Math.floor(component.height / 12);
           return (
             <>
               <Rect
@@ -346,8 +492,10 @@ export function InteractiveBuilderCanvas({
                   />
                   <Line
                     points={[
-                      2, i * (component.height / stepCount) + 2,
-                      component.width - 2, i * (component.height / stepCount) + 2
+                      2,
+                      i * (component.height / stepCount) + 2,
+                      component.width - 2,
+                      i * (component.height / stepCount) + 2,
                     ]}
                     stroke="rgba(255,255,255,0.3)"
                     strokeWidth={1}
@@ -356,7 +504,12 @@ export function InteractiveBuilderCanvas({
               ))}
               {/* Down arrow indicator */}
               <Arrow
-                points={[component.width / 2, 10, component.width / 2, component.height - 10]}
+                points={[
+                  component.width / 2,
+                  10,
+                  component.width / 2,
+                  component.height - 10,
+                ]}
                 pointerLength={8}
                 pointerWidth={8}
                 fill="white"
@@ -365,10 +518,10 @@ export function InteractiveBuilderCanvas({
                 opacity={0.7}
               />
             </>
-          )
+          );
 
         case 'railing':
-          const postCount = Math.ceil(component.width / 30)
+          const postCount = Math.ceil(component.width / 30);
           return (
             <>
               {/* Main rail bar */}
@@ -410,7 +563,7 @@ export function InteractiveBuilderCanvas({
                 cornerRadius={2}
               />
             </>
-          )
+          );
 
         case 'post':
           return (
@@ -446,7 +599,7 @@ export function InteractiveBuilderCanvas({
                 fill={colors.accent}
               />
             </>
-          )
+          );
 
         case 'beam':
           return (
@@ -465,13 +618,18 @@ export function InteractiveBuilderCanvas({
               />
               {/* Wood grain texture */}
               <Line
-                points={[0, component.height / 2, component.width, component.height / 2]}
+                points={[
+                  0,
+                  component.height / 2,
+                  component.width,
+                  component.height / 2,
+                ]}
                 stroke={colors.secondary}
                 strokeWidth={1}
                 opacity={0.4}
               />
             </>
-          )
+          );
 
         case 'landing':
           return (
@@ -493,7 +651,7 @@ export function InteractiveBuilderCanvas({
               {Array.from({ length: 8 }).map((_, i) => (
                 <Circle
                   key={`texture-${i}`}
-                  x={10 + (i % 4) * (component.width - 20) / 3}
+                  x={10 + ((i % 4) * (component.width - 20)) / 3}
                   y={10 + Math.floor(i / 4) * (component.height - 20)}
                   radius={2}
                   fill={colors.secondary}
@@ -501,10 +659,10 @@ export function InteractiveBuilderCanvas({
                 />
               ))}
             </>
-          )
+          );
 
         case 'pergola':
-          const beamCount = 4
+          const beamCount = 4;
           return (
             <>
               {/* Pergola frame */}
@@ -554,7 +712,7 @@ export function InteractiveBuilderCanvas({
                 />
               ))}
             </>
-          )
+          );
 
         case 'planter':
           return (
@@ -591,7 +749,7 @@ export function InteractiveBuilderCanvas({
                 opacity={0.8}
               />
             </>
-          )
+          );
 
         case 'bench':
           return (
@@ -621,10 +779,24 @@ export function InteractiveBuilderCanvas({
                 />
               ))}
               {/* Legs */}
-              <Rect x={5} y={component.height} width={6} height={8} fill={colors.secondary} cornerRadius={1} />
-              <Rect x={component.width - 11} y={component.height} width={6} height={8} fill={colors.secondary} cornerRadius={1} />
+              <Rect
+                x={5}
+                y={component.height}
+                width={6}
+                height={8}
+                fill={colors.secondary}
+                cornerRadius={1}
+              />
+              <Rect
+                x={component.width - 11}
+                y={component.height}
+                width={6}
+                height={8}
+                fill={colors.secondary}
+                cornerRadius={1}
+              />
             </>
-          )
+          );
 
         case 'firepit':
           return (
@@ -664,7 +836,7 @@ export function InteractiveBuilderCanvas({
                 opacity={0.8}
               />
             </>
-          )
+          );
 
         case 'hottub':
           return (
@@ -705,7 +877,7 @@ export function InteractiveBuilderCanvas({
                 />
               ))}
             </>
-          )
+          );
 
         case 'tree':
           return (
@@ -742,7 +914,7 @@ export function InteractiveBuilderCanvas({
                 cornerRadius={1}
               />
             </>
-          )
+          );
 
         case 'door':
           return (
@@ -756,12 +928,31 @@ export function InteractiveBuilderCanvas({
                 cornerRadius={1}
               />
               {/* Door panels */}
-              <Rect x={3} y={2} width={component.width / 2 - 5} height={component.height - 4} fill="#4A3F2F" cornerRadius={1} />
-              <Rect x={component.width / 2 + 2} y={2} width={component.width / 2 - 5} height={component.height - 4} fill="#4A3F2F" cornerRadius={1} />
+              <Rect
+                x={3}
+                y={2}
+                width={component.width / 2 - 5}
+                height={component.height - 4}
+                fill="#4A3F2F"
+                cornerRadius={1}
+              />
+              <Rect
+                x={component.width / 2 + 2}
+                y={2}
+                width={component.width / 2 - 5}
+                height={component.height - 4}
+                fill="#4A3F2F"
+                cornerRadius={1}
+              />
               {/* Handle */}
-              <Circle x={component.width - 8} y={component.height / 2} radius={2} fill="#C0C0C0" />
+              <Circle
+                x={component.width - 8}
+                y={component.height / 2}
+                radius={2}
+                fill="#C0C0C0"
+              />
             </>
-          )
+          );
 
         case 'window':
           return (
@@ -775,10 +966,28 @@ export function InteractiveBuilderCanvas({
                 cornerRadius={1}
               />
               {/* Window panes */}
-              <Line points={[component.width / 2, 0, component.width / 2, component.height]} stroke="#555" strokeWidth={1} />
-              <Line points={[0, component.height / 2, component.width, component.height / 2]} stroke="#555" strokeWidth={1} />
+              <Line
+                points={[
+                  component.width / 2,
+                  0,
+                  component.width / 2,
+                  component.height,
+                ]}
+                stroke="#555"
+                strokeWidth={1}
+              />
+              <Line
+                points={[
+                  0,
+                  component.height / 2,
+                  component.width,
+                  component.height / 2,
+                ]}
+                stroke="#555"
+                strokeWidth={1}
+              />
             </>
-          )
+          );
 
         default:
           return (
@@ -789,9 +998,9 @@ export function InteractiveBuilderCanvas({
               stroke={isSelected ? '#3B82F6' : '#333'}
               strokeWidth={isSelected ? 3 : 1}
             />
-          )
+          );
       }
-    }
+    };
 
     return (
       <Group {...commonGroupProps}>
@@ -848,11 +1057,23 @@ export function InteractiveBuilderCanvas({
               shadowOpacity={0.3}
               draggable
               onDragMove={(e) => {
-                const node = e.target
-                const newWidth = Math.max(20, snapToGrid(component.width + node.x() - component.width + 8))
-                const newHeight = Math.max(20, snapToGrid(component.height + node.y() - component.height + 8))
-                updateComponent(component.id, { width: newWidth, height: newHeight })
-                node.position({ x: component.width - 8, y: component.height - 8 })
+                const node = e.target;
+                const newWidth = Math.max(
+                  20,
+                  snapToGrid(component.width + node.x() - component.width + 8)
+                );
+                const newHeight = Math.max(
+                  20,
+                  snapToGrid(component.height + node.y() - component.height + 8)
+                );
+                updateComponent(component.id, {
+                  width: newWidth,
+                  height: newHeight,
+                });
+                node.position({
+                  x: component.width - 8,
+                  y: component.height - 8,
+                });
               }}
             />
             {/* Resize icon */}
@@ -875,21 +1096,23 @@ export function InteractiveBuilderCanvas({
           </Group>
         )}
       </Group>
-    )
-  }
+    );
+  };
 
-  const selectedComponent = components.find(c => c.id === selectedId)
+  const selectedComponent = components.find((c) => c.id === selectedId);
 
   // Sort by zIndex for proper layering
-  const sortedComponents = [...components].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+  const sortedComponents = [...components].sort(
+    (a, b) => (a.zIndex || 0) - (b.zIndex || 0)
+  );
 
   // Component categories for the toolbar
   const componentCategories = {
-    'Structure': ['deck', 'stairs', 'landing', 'railing', 'post', 'beam'],
-    'Features': ['pergola', 'bench', 'planter', 'firepit', 'hottub'],
-    'Landscape': ['tree'],
-    'House': ['door', 'window'],
-  }
+    Structure: ['deck', 'stairs', 'landing', 'railing', 'post', 'beam'],
+    Features: ['pergola', 'bench', 'planter', 'firepit', 'hottub'],
+    Landscape: ['tree'],
+    House: ['door', 'window'],
+  };
 
   return (
     <div className="space-y-3">
@@ -902,8 +1125,8 @@ export function InteractiveBuilderCanvas({
               <span className="text-xs text-slate-400 mr-2">{category}:</span>
               <div className="flex gap-1 bg-slate-900/50 rounded-lg p-1">
                 {types.map((type) => {
-                  const template = componentTemplates[type as ComponentType]
-                  const Icon = template.icon
+                  const template = componentTemplates[type as ComponentType];
+                  const Icon = template.icon;
                   return (
                     <button
                       key={type}
@@ -913,7 +1136,7 @@ export function InteractiveBuilderCanvas({
                     >
                       <Icon className="w-4 h-4" />
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -938,7 +1161,9 @@ export function InteractiveBuilderCanvas({
             >
               <ZoomIn className="w-4 h-4" />
             </button>
-            <span className="px-2 text-xs text-slate-300 font-mono">{Math.round(scale * 100)}%</span>
+            <span className="px-2 text-xs text-slate-300 font-mono">
+              {Math.round(scale * 100)}%
+            </span>
             <button
               onClick={() => setScale(Math.max(scale - 0.25, 0.5))}
               className="p-2 rounded-lg text-slate-300 hover:bg-slate-600 hover:text-white"
@@ -983,7 +1208,11 @@ export function InteractiveBuilderCanvas({
                 className={`p-2 rounded-lg ${selectedComponent.locked ? 'bg-red-500/30 text-red-400' : 'text-slate-300 hover:bg-slate-600'}`}
                 title={selectedComponent.locked ? 'Unlock' : 'Lock'}
               >
-                {selectedComponent.locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                {selectedComponent.locked ? (
+                  <Lock className="w-4 h-4" />
+                ) : (
+                  <Unlock className="w-4 h-4" />
+                )}
               </button>
               <button
                 onClick={() => bringToFront(selectedId!)}
@@ -1000,7 +1229,11 @@ export function InteractiveBuilderCanvas({
               <input
                 type="number"
                 value={Math.round(selectedComponent.width / SCALE_FACTOR)}
-                onChange={(e) => updateComponent(selectedId!, { width: Number(e.target.value) * SCALE_FACTOR })}
+                onChange={(e) =>
+                  updateComponent(selectedId!, {
+                    width: Number(e.target.value) * SCALE_FACTOR,
+                  })
+                }
                 className="w-12 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm text-white text-center"
                 min="1"
                 disabled={selectedComponent.locked}
@@ -1009,7 +1242,11 @@ export function InteractiveBuilderCanvas({
               <input
                 type="number"
                 value={Math.round(selectedComponent.height / SCALE_FACTOR)}
-                onChange={(e) => updateComponent(selectedId!, { height: Number(e.target.value) * SCALE_FACTOR })}
+                onChange={(e) =>
+                  updateComponent(selectedId!, {
+                    height: Number(e.target.value) * SCALE_FACTOR,
+                  })
+                }
                 className="w-12 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm text-white text-center"
                 min="1"
                 disabled={selectedComponent.locked}
@@ -1027,30 +1264,42 @@ export function InteractiveBuilderCanvas({
                   className="w-5 h-5 rounded border border-white/30"
                   style={{ backgroundColor: selectedComponent.color }}
                 />
-                <span className="text-xs text-slate-300 capitalize">{selectedComponent.material}</span>
+                <span className="text-xs text-slate-300 capitalize">
+                  {selectedComponent.material}
+                </span>
               </button>
               {showMaterialPicker && (
                 <div className="absolute top-full left-0 mt-2 p-3 bg-white rounded-xl shadow-xl z-50 border">
                   <div className="space-y-2">
-                    {(Object.keys(MATERIAL_COLORS) as Material[]).map((material) => (
-                      <button
-                        key={material}
-                        onClick={() => {
-                          const colors = MATERIAL_COLORS[material]
-                          updateComponent(selectedId!, { material, color: colors.primary })
-                          setShowMaterialPicker(false)
-                        }}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 ${
-                          selectedComponent.material === material ? 'bg-blue-50 ring-2 ring-blue-500' : ''
-                        }`}
-                      >
-                        <div
-                          className="w-6 h-6 rounded border"
-                          style={{ backgroundColor: MATERIAL_COLORS[material].primary }}
-                        />
-                        <span className="text-sm capitalize">{material}</span>
-                      </button>
-                    ))}
+                    {(Object.keys(MATERIAL_COLORS) as Material[]).map(
+                      (material) => (
+                        <button
+                          key={material}
+                          onClick={() => {
+                            const colors = MATERIAL_COLORS[material];
+                            updateComponent(selectedId!, {
+                              material,
+                              color: colors.primary,
+                            });
+                            setShowMaterialPicker(false);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 ${
+                            selectedComponent.material === material
+                              ? 'bg-blue-50 ring-2 ring-blue-500'
+                              : ''
+                          }`}
+                        >
+                          <div
+                            className="w-6 h-6 rounded border"
+                            style={{
+                              backgroundColor:
+                                MATERIAL_COLORS[material].primary,
+                            }}
+                          />
+                          <span className="text-sm capitalize">{material}</span>
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -1078,7 +1327,7 @@ export function InteractiveBuilderCanvas({
           scaleY={scale}
           onClick={(e) => {
             if (e.target === e.target.getStage()) {
-              setSelectedId(null)
+              setSelectedId(null);
             }
           }}
         >
@@ -1121,8 +1370,9 @@ export function InteractiveBuilderCanvas({
 
       {/* Instructions */}
       <div className="text-center text-sm text-slate-500 bg-slate-50 rounded-lg py-2 px-4">
-        Click a component button to add it. Drag to move. Drag the corner handle to resize. Use the toolbar to customize.
+        Click a component button to add it. Drag to move. Drag the corner handle
+        to resize. Use the toolbar to customize.
       </div>
     </div>
-  )
+  );
 }

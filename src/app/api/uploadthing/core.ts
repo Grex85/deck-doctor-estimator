@@ -1,33 +1,32 @@
-import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { UploadThingError } from "uploadthing/server";
+import { createUploadthing, type FileRouter } from 'uploadthing/next';
 
 const f = createUploadthing();
 
 export const ourFileRouter = {
   jobMedia: f({
-    image: { 
-      maxFileSize: "8MB", 
-      maxFileCount: 10 
+    image: {
+      maxFileSize: '8MB',
+      maxFileCount: 10,
     },
-    video: { 
-      maxFileSize: "32MB", 
-      maxFileCount: 5 
-    }
+    video: {
+      maxFileSize: '32MB',
+      maxFileCount: 5,
+    },
   })
-    .middleware(async ({ req }) => {
-      return { 
-        userId: "temp-user"
+    .middleware(async () => {
+      return {
+        userId: 'temp-user',
       };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Upload complete!");
-      console.log("File URL:", file.url);
-      
-      return { 
+      console.log('Upload complete!');
+      console.log('File URL:', file.url);
+
+      return {
         uploadedBy: metadata.userId,
         fileUrl: file.url,
-        fileName: file.name
-      }; 
+        fileName: file.name,
+      };
     }),
 } satisfies FileRouter;
 
